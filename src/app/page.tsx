@@ -20,46 +20,51 @@ export default async function HomePage() {
   const mode = storageMode();
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 pb-16 pt-10">
-      <header className="mb-8">
-        <p className="mb-2 text-sm tracking-[0.18em] text-[var(--muted)] uppercase">
-          Daily AI Catch-up
-        </p>
+    <main className="mx-auto min-h-full w-full max-w-3xl px-5 pb-20 pt-8 sm:px-8">
+      <header className="border-b border-[var(--hairline)] pb-8">
+        <div className="mb-6 flex items-center justify-between text-[12px] font-bold tracking-[0.08em] uppercase">
+          <span>AI Feed Digest</span>
+          <span className="text-[var(--body)]">{formatDate(new Date().toISOString())}</span>
+        </div>
         <h1
-          className="text-4xl leading-tight text-[var(--foreground)]"
-          style={{ fontFamily: "var(--font-display), serif" }}
+          className="max-w-xl text-[42px] leading-[1.05] tracking-[-0.02em] sm:text-[56px]"
+          style={{ fontFamily: "var(--font-display), Georgia, serif" }}
         >
-          AI Feed Digest
+          公式更新を、先に理解する。
         </h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-[var(--muted)]">
-          公式情報を AI
-          要約で先に理解する。詳細が必要なら元URLへ。いまは一覧をタップするだけ。
+        <p className="mt-5 max-w-xl text-[16px] leading-7 text-[var(--body)]">
+          結論と使える場面だけを残した日次リーダー。詳細が必要なら元記事へ。
         </p>
-        <p className="mt-3 text-xs text-[var(--muted)]">
-          storage: {mode === "neon" ? "Neon (Postgres)" : "local JSON / seed"}
+        <p className="mt-4 text-[12px] tracking-[0.04em] text-[var(--body)] uppercase">
+          storage · {mode === "neon" ? "neon postgres" : "local / seed"}
         </p>
       </header>
 
-      <section className="flex flex-col gap-3">
+      <section className="mt-2">
         {articles.map((article) => (
           <Link
             key={article.id}
             href={`/articles/${article.id}`}
-            className="rounded-2xl border border-[var(--card-border)] bg-[var(--card)] px-5 py-4 shadow-[var(--shadow)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]"
+            className="group block border-b border-[var(--hairline)] py-7 transition-colors hover:bg-[var(--canvas-soft)]"
           >
-            <div className="mb-2 flex items-center justify-between gap-3 text-xs text-[var(--muted)]">
-              <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[var(--accent)]">
-                {article.source}
-              </span>
-              <time dateTime={article.publishedAt}>
+            <div className="mb-3 flex items-center gap-3 text-[12px] font-bold tracking-[0.06em] uppercase">
+              <span>{article.source}</span>
+              <span className="text-[var(--body)]">/</span>
+              <time
+                dateTime={article.publishedAt}
+                className="font-normal text-[var(--body)]"
+              >
                 {formatDate(article.publishedAt)}
               </time>
             </div>
-            <h2 className="text-lg leading-snug font-semibold">
+            <h2
+              className="text-[26px] leading-[1.15] tracking-[-0.015em] group-hover:underline sm:text-[32px]"
+              style={{ fontFamily: "var(--font-display), Georgia, serif" }}
+            >
               {article.title}
             </h2>
-            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--muted)]">
-              {article.summary.conclusion}
+            <p className="mt-3 line-clamp-2 max-w-2xl text-[15px] leading-6 text-[var(--body)]">
+              {article.summary.conclusion.replace(/\n/g, " ")}
             </p>
           </Link>
         ))}

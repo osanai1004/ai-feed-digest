@@ -1,15 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Source_Sans_3 } from "next/font/google";
+import { IBM_Plex_Sans, Newsreader } from "next/font/google";
 import "./globals.css";
 
-const display = Fraunces({
-  variable: "--font-fraunces",
+const display = Newsreader({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
-const sans = Source_Sans_3({
-  variable: "--font-source-sans",
+const ui = IBM_Plex_Sans({
+  variable: "--font-ui",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f1ea",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
 };
@@ -34,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${display.variable} ${sans.variable} h-full`}>
+    <html lang="ja" className={`${display.variable} ${ui.variable} h-full`}>
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

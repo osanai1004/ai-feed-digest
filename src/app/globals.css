@@ -1,39 +1,50 @@
 @import "tailwindcss";
 
+/* Inspired by VoltAgent/awesome-design-md → Wired editorial system:
+   stark black/white, hairline rules, serif display, minimal chrome. */
+
 :root {
-  --background: #f7f1ea;
-  --foreground: #2c241c;
-  --card: #fffaf4;
-  --card-border: #e8d9c8;
-  --muted: #6d5f52;
-  --accent: #c47a4a;
-  --accent-soft: #f0e0d2;
-  --shadow: 0 10px 30px rgba(74, 52, 36, 0.08);
+  --ink: #000000;
+  --ink-soft: #1a1a1a;
+  --body: #757575;
+  --hairline: #e0e0e0;
+  --canvas: #ffffff;
+  --canvas-soft: #f5f5f5;
+  --link: #057dbc;
+  --background: var(--canvas);
+  --foreground: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-border: var(--card-border);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --font-sans: var(--font-source-sans);
-  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-ui);
+  --font-serif: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, #ffe8d4 0%, transparent 40%),
-    radial-gradient(circle at bottom right, #f3e2cf 0%, transparent 35%),
-    var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), "Hiragino Sans", "Noto Sans JP", sans-serif;
-  min-height: 100%;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-ui), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+::selection {
+  background: #000;
+  color: #fff;
 }
