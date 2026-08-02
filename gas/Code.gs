@@ -85,8 +85,9 @@ var FEEDS = [
   },
 ];
 
-var GEMINI_MODEL = "gemini-2.0-flash";
-var MAX_ITEMS_PER_FEED = 3;
+var DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+var MAX_ITEMS_PER_FEED = 2;
+var SLEEP_MS_BETWEEN_CALLS = 8000;
 
 function runOnce() {
   var props = PropertiesService.getScriptProperties();
@@ -95,12 +96,16 @@ function runOnce() {
   var ingestSecret = props.getProperty("INGEST_SECRET");
   var slackWebhook = props.getProperty("SLACK_WEBHOOK_URL");
   var appBaseUrl = props.getProperty("APP_BASE_URL");
+  var geminiModel =
+    props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
 
   if (!apiKey || !ingestUrl || !ingestSecret) {
     throw new Error(
       "Script Properties に GOOGLE_API_KEY / INGEST_URL / INGEST_SECRET を設定してください",
     );
   }
+
+  Logger.log("using model=" + geminiModel);
 
   var seen = loadSeen_();
   var ingested = [];
@@ -115,6 +120,7 @@ function runOnce() {
         var bodyText = item.description || item.title;
         var summary = summarizeWithGemini_(
           apiKey,
+          geminiModel,
           feed.source,
           item.title,
           bodyText,
@@ -131,10 +137,17 @@ function runOnce() {
         postIngest_(ingestUrl, ingestSecret, payload);
         seen[item.link] = true;
         ingested.push(payload);
+
+        // 無料枠の RPM 制限を避ける
+        Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
       });
     } catch (e) {
       errors.push(feed.source + ": " + e.message);
       Logger.log("feed error (" + feed.source + "): " + e.message);
+      // 429 のときは少し待って次フィードへ
+      if (String(e.message).indexOf("429") !== -1) {
+        Utilities.sleep(35000);
+      }
     }
   });
 
@@ -215,10 +228,10 @@ function notifySlack_(webhookUrl, appBaseUrl, articles) {
   Logger.log("slack notified=" + articles.length);
 }
 
-function summarizeWithGemini_(apiKey, source, title, bodyText) {
+function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
   var endpoint =
     "https://generativelanguage.googleapis.com/v1beta/models/" +
-    GEMINI_MODEL +
+    model +
     ":generateContent?key=" +
     encodeURIComponent(apiKey);
 
@@ -240,38 +253,48 @@ function summarizeWithGemini_(apiKey, source, title, bodyText) {
     title +
     "\n" +
     "body:\n" +
-    String(bodyText).slice(0, 12000);
+    String(bodyText).slice(0, 8000);
 
-  var response = UrlFetchApp.fetch(endpoint, {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.3 },
-    }),
-    muteHttpExceptions: true,
-  });
+  var lastError = null;
+  for (var attempt = 1; attempt <= 3; attempt++) {
+    var response = UrlFetchApp.fetch(endpoint, {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3 },
+      }),
+      muteHttpExceptions: true,
+    });
 
-  var status = response.getResponseCode();
-  var text = response.getContentText();
-  if (status >= 300) {
-    throw new Error("Gemini API error: " + status + " " + text);
+    var status = response.getResponseCode();
+    var text = response.getContentText();
+    if (status === 429) {
+      lastError = new Error("Gemini API error: " + status + " " + text);
+      Utilities.sleep(attempt * 20000);
+      continue;
+    }
+    if (status >= 300) {
+      throw new Error("Gemini API error: " + status + " " + text);
+    }
+
+    var data = JSON.parse(text);
+    var raw =
+      (((data.candidates || [])[0] || {}).content || {}).parts || [];
+    var content = (raw[0] && raw[0].text) || "";
+    content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
+
+    var parsed = JSON.parse(content);
+    if (!parsed.conclusion || !parsed.situations) {
+      throw new Error("Gemini response missing fields: " + content);
+    }
+    return {
+      conclusion: String(parsed.conclusion),
+      situations: parsed.situations.map(String).slice(0, 3),
+    };
   }
 
-  var data = JSON.parse(text);
-  var raw =
-    (((data.candidates || [])[0] || {}).content || {}).parts || [];
-  var content = (raw[0] && raw[0].text) || "";
-  content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
-
-  var parsed = JSON.parse(content);
-  if (!parsed.conclusion || !parsed.situations) {
-    throw new Error("Gemini response missing fields: " + content);
-  }
-  return {
-    conclusion: String(parsed.conclusion),
-    situations: parsed.situations.map(String).slice(0, 3),
-  };
+  throw lastError || new Error("Gemini API failed after retries");
 }
 
 function postIngest_(ingestUrl, ingestSecret, payload) {
