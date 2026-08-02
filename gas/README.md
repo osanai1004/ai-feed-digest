@@ -11,6 +11,7 @@
 | `INGEST_SECRET` | Yes | Vercel の `INGEST_SECRET` と同じ |
 | `SLACK_WEBHOOK_URL` | No | Slack Incoming Webhook。未設定なら通知しない |
 | `APP_BASE_URL` | No | `https://あなたのアプリ.vercel.app`（Slack文言用） |
+| `GEMINI_MODEL` | No | 既定 `gemini-2.5-flash-lite`（無料枠向き）。だめなら `gemini-2.5-flash` |
 
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
