@@ -70,6 +70,18 @@ var FEEDS = [
     source: "Next.js",
     url: "https://nextjs.org/feed.xml",
   },
+  {
+    source: "Hugging Face",
+    url: "https://huggingface.co/blog/feed.xml",
+  },
+  {
+    source: "GitHub Changelog",
+    url: "https://github.blog/changelog/feed/",
+  },
+  {
+    source: "Cloudflare",
+    url: "https://blog.cloudflare.com/rss/",
+  },
 ];
 
 var GEMINI_MODEL = "gemini-2.0-flash";
