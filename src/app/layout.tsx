@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -25,7 +26,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f4f7fb",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
@@ -36,8 +40,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${display.variable} ${ui.variable} h-full`}>
-      <body className="min-h-full antialiased">{children}</body>
+    <html
+      lang="ja"
+      className={`${display.variable} ${ui.variable} h-full`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

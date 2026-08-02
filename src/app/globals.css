@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-/* Pop / modern card UI — inspired by Clay + Framer accents,
-   avoiding plain editorial and generic purple AI gradients. */
+/* Pop / modern card UI — Clay/Framer inspired + light/dark toggle */
 
 :root {
   --ink: #0f172a;
@@ -9,14 +8,54 @@
   --body: #64748b;
   --mute: #94a3b8;
   --canvas: #f4f7fb;
-  --canvas-2: #eef2ff;
   --card: #ffffff;
+  --card-soft: rgba(255, 255, 255, 0.82);
   --hairline: #e2e8f0;
   --accent: #0ea5a4;
-  --accent-2: #f97316;
-  --accent-3: #2563eb;
+  --accent-strong: #0d9488;
+  --chip-teal-bg: #f0fdfa;
+  --chip-teal-fg: #0f766e;
+  --chip-orange-bg: #fff7ed;
+  --chip-orange-fg: #c2410c;
+  --chip-sky-bg: #f0f9ff;
+  --chip-sky-fg: #0369a1;
+  --panel: linear-gradient(135deg, #f8fafc 0%, rgba(204, 251, 241, 0.55) 100%);
+  --cta-fg: #042f2e;
+  --cta-bg: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 55%, #fb923c 100%);
   --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   --shadow-hover: 0 18px 40px rgba(15, 23, 42, 0.14);
+  --bg-glow-1: #dbeafe;
+  --bg-glow-2: #ccfbf1;
+  --bg-glow-3: #ffedd5;
+  --background: var(--canvas);
+  --foreground: var(--ink);
+}
+
+.dark {
+  --ink: #f8fafc;
+  --ink-soft: #e2e8f0;
+  --body: #94a3b8;
+  --mute: #64748b;
+  --canvas: #0b1220;
+  --card: #111827;
+  --card-soft: rgba(17, 24, 39, 0.88);
+  --hairline: #243244;
+  --accent: #2dd4bf;
+  --accent-strong: #5eead4;
+  --chip-teal-bg: rgba(45, 212, 191, 0.14);
+  --chip-teal-fg: #5eead4;
+  --chip-orange-bg: rgba(251, 146, 60, 0.16);
+  --chip-orange-fg: #fdba74;
+  --chip-sky-bg: rgba(56, 189, 248, 0.14);
+  --chip-sky-fg: #7dd3fc;
+  --panel: linear-gradient(135deg, #0f172a 0%, rgba(13, 148, 136, 0.22) 100%);
+  --cta-fg: #042f2e;
+  --cta-bg: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 55%, #fb923c 100%);
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 20px 44px rgba(0, 0, 0, 0.45);
+  --bg-glow-1: rgba(37, 99, 235, 0.22);
+  --bg-glow-2: rgba(20, 184, 166, 0.18);
+  --bg-glow-3: rgba(249, 115, 22, 0.16);
   --background: var(--canvas);
   --foreground: var(--ink);
 }
@@ -42,11 +81,12 @@ body {
   color: var(--ink);
   font-family: var(--font-ui), "Hiragino Sans", "Noto Sans JP", sans-serif;
   background:
-    radial-gradient(1200px 600px at -10% -20%, #dbeafe 0%, transparent 55%),
-    radial-gradient(900px 500px at 110% 0%, #ccfbf1 0%, transparent 50%),
-    radial-gradient(700px 420px at 80% 100%, #ffedd5 0%, transparent 45%),
+    radial-gradient(1200px 600px at -10% -20%, var(--bg-glow-1) 0%, transparent 55%),
+    radial-gradient(900px 500px at 110% 0%, var(--bg-glow-2) 0%, transparent 50%),
+    radial-gradient(700px 420px at 80% 100%, var(--bg-glow-3) 0%, transparent 45%),
     var(--canvas);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 a {
@@ -81,4 +121,23 @@ a {
 
 .animate-float {
   animation: float-soft 5s ease-in-out infinite;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.85rem 1.4rem;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--cta-fg);
+  background: var(--cta-bg);
+  box-shadow: 0 10px 24px rgba(14, 165, 164, 0.28);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.cta-button:hover {
+  transform: scale(1.02);
+  filter: brightness(1.05);
 }

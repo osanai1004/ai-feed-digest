@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getArticle } from "@/lib/store";
 import { styleForSource } from "@/lib/sourceStyles";
 
@@ -31,16 +32,17 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-6 sm:px-6">
-      <div className="mb-5">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <Link
           href="/"
-          className="inline-flex items-center rounded-full border border-[var(--hairline)] bg-white/80 px-4 py-2 text-[12px] font-bold text-[var(--ink-soft)] shadow-sm backdrop-blur transition hover:-translate-y-0.5"
+          className="inline-flex items-center rounded-full border border-[var(--hairline)] bg-[var(--card-soft)] px-4 py-2 text-[12px] font-bold text-[var(--ink-soft)] shadow-sm backdrop-blur transition hover:-translate-y-0.5"
         >
           ← 一覧へ
         </Link>
+        <ThemeToggle />
       </div>
 
-      <article className="animate-rise overflow-hidden rounded-[28px] border border-[var(--hairline)] bg-white shadow-[var(--shadow)]">
+      <article className="animate-rise overflow-hidden rounded-[28px] border border-[var(--hairline)] bg-[var(--card)] shadow-[var(--shadow)]">
         <div
           className="h-2 w-full"
           style={{
@@ -70,8 +72,14 @@ export default async function ArticlePage({ params }: Props) {
             {article.title}
           </h1>
 
-          <section className="mt-8 rounded-3xl bg-gradient-to-br from-slate-50 to-teal-50/60 p-5 sm:p-6">
-            <h2 className="mb-3 text-[12px] font-extrabold tracking-[0.14em] text-teal-700 uppercase">
+          <section
+            className="mt-8 rounded-3xl p-5 sm:p-6"
+            style={{ background: "var(--panel)" }}
+          >
+            <h2
+              className="mb-3 text-[12px] font-extrabold tracking-[0.14em] uppercase"
+              style={{ color: "var(--chip-teal-fg)" }}
+            >
               結論
             </h2>
             <div className="whitespace-pre-line text-[17px] leading-8 text-[var(--ink-soft)]">
@@ -80,7 +88,10 @@ export default async function ArticlePage({ params }: Props) {
           </section>
 
           <section className="mt-6">
-            <h2 className="mb-4 text-[12px] font-extrabold tracking-[0.14em] text-orange-600 uppercase">
+            <h2
+              className="mb-4 text-[12px] font-extrabold tracking-[0.14em] uppercase"
+              style={{ color: "var(--chip-orange-fg)" }}
+            >
               使えるシチュエーション
             </h2>
             <ol className="grid gap-3">
@@ -108,12 +119,15 @@ export default async function ArticlePage({ params }: Props) {
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--ink)] px-6 py-3 text-[14px] font-bold text-white transition hover:scale-[1.02] hover:bg-slate-800"
+              className="cta-button"
             >
               元記事で詳細を確認する →
             </a>
             <p className="mt-3 text-[13px] leading-6 text-[var(--body)]">
               まずカード内の要約で把握。詳しく見たいときだけ公式へ。
+            </p>
+            <p className="mt-2 break-all text-[12px] text-[var(--accent)]">
+              {article.url}
             </p>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { listArticles, storageMode } from "@/lib/store";
 import { styleForSource } from "@/lib/sourceStyles";
 
@@ -21,35 +22,56 @@ export default async function HomePage() {
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-8 sm:px-6">
-      <header className="animate-rise mb-8 overflow-hidden rounded-[28px] border border-white/70 bg-white/80 p-6 shadow-[var(--shadow)] backdrop-blur sm:p-8">
+      <header className="animate-rise mb-8 overflow-hidden rounded-[28px] border border-[var(--hairline)] bg-[var(--card-soft)] p-6 shadow-[var(--shadow)] backdrop-blur sm:p-8">
         <div className="mb-5 flex items-center justify-between gap-3">
-          <span className="inline-flex items-center rounded-full bg-[var(--ink)] px-3 py-1 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
+          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-teal-500 to-sky-500 px-3 py-1 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
             Daily Catch-up
           </span>
-          <span className="animate-float inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 to-sky-500 text-lg text-white shadow-md">
-            ✦
-          </span>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <span className="animate-float inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 to-sky-500 text-lg text-white shadow-md">
+              ✦
+            </span>
+          </div>
         </div>
         <h1
           className="max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
           AIの更新を、
-          <span className="bg-gradient-to-r from-teal-600 via-sky-600 to-orange-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-teal-500 via-sky-500 to-orange-400 bg-clip-text text-transparent">
             ポップに把握
           </span>
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-7 text-[var(--body)]">
           結論と使える場面つき。カードをタップしてサクッと読んで、必要なら元記事へ。
         </p>
-        <div className="mt-5 flex flex-wrap gap-2 text-[12px] font-semibold text-[var(--ink-soft)]">
-          <span className="rounded-full bg-teal-50 px-3 py-1 text-teal-700">
+        <div className="mt-5 flex flex-wrap gap-2 text-[12px] font-semibold">
+          <span
+            className="rounded-full px-3 py-1"
+            style={{
+              background: "var(--chip-teal-bg)",
+              color: "var(--chip-teal-fg)",
+            }}
+          >
             {articles.length} articles
           </span>
-          <span className="rounded-full bg-orange-50 px-3 py-1 text-orange-700">
+          <span
+            className="rounded-full px-3 py-1"
+            style={{
+              background: "var(--chip-orange-bg)",
+              color: "var(--chip-orange-fg)",
+            }}
+          >
             summary first
           </span>
-          <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-700">
+          <span
+            className="rounded-full px-3 py-1"
+            style={{
+              background: "var(--chip-sky-bg)",
+              color: "var(--chip-sky-fg)",
+            }}
+          >
             {mode === "neon" ? "neon db" : "local / seed"}
           </span>
         </div>
@@ -84,7 +106,7 @@ export default async function HomePage() {
                 </time>
               </div>
               <h2
-                className="pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] transition group-hover:text-sky-700 sm:text-[24px]"
+                className="pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] transition group-hover:text-[var(--accent-strong)] sm:text-[24px]"
                 style={{ fontFamily: "var(--font-display), sans-serif" }}
               >
                 {article.title}
