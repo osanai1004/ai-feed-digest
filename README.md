@@ -60,14 +60,21 @@ npx vercel --prod --yes
 
 ## 4. GAS 連携
 
+詳細は `gas/README.md`。
+
 1. [Apps Script](https://script.google.com/) で新規プロジェクト
 2. `gas/Code.gs` を貼り付け
 3. スクリプトプロパティ:
    - `GOOGLE_API_KEY` = Gemini API キー
    - `INGEST_URL` = `https://<your-app>.vercel.app/api/ingest`
    - `INGEST_SECRET` = Vercel と同じ値
+   - `SLACK_WEBHOOK_URL` = （任意）Slack Incoming Webhook
+   - `APP_BASE_URL` = （任意）アプリURL
 4. `runOnce` を手動実行（初回認可あり）
 5. 必要なら `createDailyTrigger` を実行
+
+監視対象（初期設定）: OpenAI / Claude / Claude Code / Google DeepMind / Google AI / Gemini  
+Slack 通知は Webhook 未設定ならスキップ（後から有効化可）。
 
 ## API
 

@@ -8,8 +8,10 @@
  *    - GOOGLE_API_KEY : Gemini API キー
  *    - INGEST_URL     : https://<your-vercel-app>.vercel.app/api/ingest
  *    - INGEST_SECRET  : Vercel と同じ秘密文字列
+ *    - SLACK_WEBHOOK_URL : (任意) Incoming Webhook URL。未設定なら通知スキップ
+ *    - APP_BASE_URL   : (任意) https://<your-vercel-app>.vercel.app
  * 4. runOnce を手動実行して認可
- * 5. トリガーで everyHours(6) または everyDays(1) を設定
+ * 5. createDailyTrigger を実行
  */
 
 var FEEDS = [
@@ -17,15 +19,39 @@ var FEEDS = [
     source: "OpenAI",
     url: "https://openai.com/news/rss.xml",
   },
+  {
+    source: "Claude",
+    // Anthropic公式ブログの安定RSSがないため、公開メンテのフィードを利用
+    url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_claude.xml",
+  },
+  {
+    source: "Claude Code",
+    url: "https://code.claude.com/docs/en/changelog/rss.xml",
+  },
+  {
+    source: "Google DeepMind",
+    url: "https://deepmind.google/blog/rss.xml",
+  },
+  {
+    source: "Google AI",
+    url: "https://blog.google/technology/ai/rss/",
+  },
+  {
+    source: "Gemini",
+    url: "https://blog.google/products/gemini/rss/",
+  },
 ];
 
 var GEMINI_MODEL = "gemini-2.0-flash";
+var MAX_ITEMS_PER_FEED = 3;
 
 function runOnce() {
   var props = PropertiesService.getScriptProperties();
   var apiKey = props.getProperty("GOOGLE_API_KEY");
   var ingestUrl = props.getProperty("INGEST_URL");
   var ingestSecret = props.getProperty("INGEST_SECRET");
+  var slackWebhook = props.getProperty("SLACK_WEBHOOK_URL");
+  var appBaseUrl = props.getProperty("APP_BASE_URL");
 
   if (!apiKey || !ingestUrl || !ingestSecret) {
     throw new Error(
@@ -34,31 +60,53 @@ function runOnce() {
   }
 
   var seen = loadSeen_();
-  var created = 0;
+  var ingested = [];
+  var errors = [];
 
   FEEDS.forEach(function (feed) {
-    var items = fetchRssItems_(feed.url).slice(0, 3);
-    items.forEach(function (item) {
-      if (seen[item.link]) return;
+    try {
+      var items = fetchRssItems_(feed.url).slice(0, MAX_ITEMS_PER_FEED);
+      items.forEach(function (item) {
+        if (seen[item.link]) return;
 
-      var bodyText = item.description || item.title;
-      var summary = summarizeWithGemini_(apiKey, feed.source, item.title, bodyText);
+        var bodyText = item.description || item.title;
+        var summary = summarizeWithGemini_(
+          apiKey,
+          feed.source,
+          item.title,
+          bodyText,
+        );
 
-      postIngest_(ingestUrl, ingestSecret, {
-        source: feed.source,
-        title: item.title,
-        url: item.link,
-        publishedAt: item.pubDate || new Date().toISOString(),
-        summary: summary,
+        var payload = {
+          source: feed.source,
+          title: item.title,
+          url: item.link,
+          publishedAt: item.pubDate || new Date().toISOString(),
+          summary: summary,
+        };
+
+        postIngest_(ingestUrl, ingestSecret, payload);
+        seen[item.link] = true;
+        ingested.push(payload);
       });
-
-      seen[item.link] = true;
-      created += 1;
-    });
+    } catch (e) {
+      errors.push(feed.source + ": " + e.message);
+      Logger.log("feed error (" + feed.source + "): " + e.message);
+    }
   });
 
   saveSeen_(seen);
-  Logger.log("ingested=" + created);
+
+  if (ingested.length > 0) {
+    notifySlack_(slackWebhook, appBaseUrl, ingested);
+  } else {
+    Logger.log("no new articles");
+  }
+
+  Logger.log("ingested=" + ingested.length + " errors=" + errors.length);
+  if (errors.length) {
+    Logger.log("errors: " + errors.join(" | "));
+  }
 }
 
 function createDailyTrigger() {
@@ -66,6 +114,62 @@ function createDailyTrigger() {
     if (t.getHandlerFunction() === "runOnce") ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger("runOnce").timeBased().everyDays(1).atHour(8).create();
+}
+
+/**
+ * Slack Incoming Webhook へ通知。
+ * SLACK_WEBHOOK_URL 未設定なら何もしない（後から有効化可能）。
+ */
+function notifySlack_(webhookUrl, appBaseUrl, articles) {
+  if (!webhookUrl) {
+    Logger.log("SLACK_WEBHOOK_URL unset — skip Slack notify");
+    return;
+  }
+
+  var lines = articles.map(function (a, i) {
+    var conclusion = String(a.summary.conclusion || "")
+      .replace(/\\n/g, " ")
+      .replace(/\n/g, " ")
+      .slice(0, 120);
+    return (
+      "*" +
+      (i + 1) +
+      ". [" +
+      a.source +
+      "] " +
+      a.title +
+      "*\n" +
+      conclusion +
+      "\n<" +
+      a.url +
+      "|元記事>"
+    );
+  });
+
+  var text =
+    ":sparkles: *AI Feed Digest* に新着 " +
+    articles.length +
+    " 件\n\n" +
+    lines.join("\n\n");
+
+  if (appBaseUrl) {
+    text += "\n\n<" + appBaseUrl.replace(/\/$/, "") + "|アプリで見る>";
+  }
+
+  var response = UrlFetchApp.fetch(webhookUrl, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({ text: text }),
+    muteHttpExceptions: true,
+  });
+
+  var status = response.getResponseCode();
+  if (status >= 300) {
+    throw new Error(
+      "Slack notify failed: " + status + " " + response.getContentText(),
+    );
+  }
+  Logger.log("slack notified=" + articles.length);
 }
 
 function summarizeWithGemini_(apiKey, source, title, bodyText) {
@@ -142,7 +246,11 @@ function postIngest_(ingestUrl, ingestSecret, payload) {
 }
 
 function fetchRssItems_(feedUrl) {
-  var xml = UrlFetchApp.fetch(feedUrl, { muteHttpExceptions: true });
+  var xml = UrlFetchApp.fetch(feedUrl, {
+    muteHttpExceptions: true,
+    followRedirects: true,
+    headers: { "User-Agent": "AI-Feed-Digest/1.0" },
+  });
   if (xml.getResponseCode() >= 300) {
     throw new Error("RSS fetch failed: " + feedUrl + " " + xml.getResponseCode());
   }
@@ -174,8 +282,12 @@ function fetchRssItems_(feedUrl) {
     items.push({
       title: textOfNs_(entry, "title", atomNs),
       link: href,
-      description: textOfNs_(entry, "summary", atomNs) || textOfNs_(entry, "content", atomNs),
-      pubDate: textOfNs_(entry, "updated", atomNs) || textOfNs_(entry, "published", atomNs),
+      description:
+        textOfNs_(entry, "summary", atomNs) ||
+        textOfNs_(entry, "content", atomNs),
+      pubDate:
+        textOfNs_(entry, "updated", atomNs) ||
+        textOfNs_(entry, "published", atomNs),
     });
   });
 
