@@ -2,6 +2,16 @@
 
 AI 公式情報を RSS で集め、Gemini で実務向け要約し、iPhone から毎日読む個人用リーダーです。
 
+## UI
+
+[VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) の **Wired** 系を参考にした編集デザインです。
+
+- 白地 × 黒文字
+- ヘアライン区切り
+- セリフ見出し（Newsreader）
+- メタ情報はサンセリフ（IBM Plex Sans）
+- 柔らかいカード／暖色グラデ／丸ピルは使わない
+
 ## 構成
 
 - **Next.js (Vercel)**: 一覧 / 詳細表示、取り込み API
@@ -15,18 +25,8 @@ AI 公式情報を RSS で集め、Gemini で実務向け要約し、iPhone か�
 
 ## 1. Gemini API キー（既存キーでOK）
 
-画面にすでにキーがある場合:
-
-- **別のキーを必須では作り直さなくてよい**
-- まずは **いま表示されているデフォルトキーをコピーして使う**
-- 後からこのアプリ専用キーを切り出すのは任意（推奨だが後回しで可）
-
-新規作成する場合:
-
-1. [Google AI Studio API keys](https://aistudio.google.com/apikey) を開く
-2. 会社 Google アカウントでログイン
-3. **Create API key**
-4. キーをコピー
+- すでに控えた既存キーをそのまま使う
+- GAS の `GOOGLE_API_KEY` に設定
 
 ## 2. ローカルで画面を見る
 
@@ -41,12 +41,23 @@ npm run dev
 
 ## 3. Vercel へデプロイ
 
-1. このリポジトリを Vercel に Import
+ワンクリック Import（ブラウザで Vercel / GitHub ログイン済みの状態で開く）:
+
+https://vercel.com/new/import?s=https://github.com/osanai1004/ai-feed-digest
+
+1. Framework Preset: Next.js（自動検出）
 2. Environment Variables:
-   - `INGEST_SECRET`（長いランダム文字列）
-3. （推奨）Vercel Marketplace で **Neon** を Free 接続  
-   - `DATABASE_URL` が入り、本番でも記事が永続化される
-4. Deploy
+   - `INGEST_SECRET` = 長いランダム文字列
+3. Deploy
+4. （あとで推奨）Marketplace で Neon Free を接続して `DATABASE_URL` を入れる
+
+CLI 例:
+
+```bash
+npx vercel link --yes
+npx vercel env add INGEST_SECRET production
+npx vercel --prod --yes
+```
 
 ## 4. GAS 連携
 
