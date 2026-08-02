@@ -4,13 +4,12 @@ AI 公式情報を RSS で集め、Gemini で実務向け要約し、iPhone か�
 
 ## UI
 
-[VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) の **Wired** 系を参考にした編集デザインです。
+[VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) の **Clay / Framer** 系を参考にした、ポップでモダンなカードUIです。
 
-- 白地 × 黒文字
-- ヘアライン区切り
-- セリフ見出し（Newsreader）
-- メタ情報はサンセリフ（IBM Plex Sans）
-- 柔らかいカード／暖色グラデ／丸ピルは使わない
+- ソフトなグラデーション背景
+- 角丸カード + ホバーで浮く
+- ソース別カラーバッジ
+- Space Grotesk（見出し）+ Manrope（本文）
 
 ## 構成
 
