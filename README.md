@@ -15,7 +15,7 @@ AI 公式情報を RSS で集め、Gemini で実務向け要約し、iPhone か�
 
 - **Next.js (Vercel)**: 一覧 / 詳細表示、取り込み API
 - **Google Apps Script**: RSS 取得 → Gemini 要約 → Vercel へ送信
-- **Neon (Postgres・任意)**: 本番の保存先（未設定時はローカル JSON / サンプル表示）
+- **Neon (Postgres)**: **Vercel 本番では必須**の保存先（未設定だと ingest が 503）。ローカルのみ JSON / サンプル表示可
 
 ## 要約フォーマット
 
@@ -48,7 +48,18 @@ https://vercel.com/new/import?s=https://github.com/osanai1004/ai-feed-digest
 2. Environment Variables:
    - `INGEST_SECRET` = 長いランダム文字列
 3. Deploy
-4. （あとで推奨）Marketplace で Neon Free を接続して `DATABASE_URL` を入れる
+4. **必須（本番）**: Neon を接続して `DATABASE_URL` を入れる（下記）
+
+### 3-1. Neon 接続（iPhone Safari でも可・必須）
+
+いまのエラー `mkdir '/var/task/data'` は、Vercel 上で DB が無くローカル JSON 保存に落ちたときに出ます。
+
+1. [Vercel Dashboard](https://vercel.com/dashboard) → プロジェクト `ai-feed-digest` を開く
+2. **Storage**（または **Integrations / Marketplace**）→ **Neon**（Free）を作成・Connect
+3. 接続先 Environment に **Production**（できれば Preview も）を選択
+4. `DATABASE_URL` が Environment Variables に入ったことを確認
+5. **Deployments** → 最新の ⋯ → **Redeploy**（env 反映のため）
+6. GAS で `runOnce` を再実行
 
 CLI 例:
 

@@ -16,6 +16,14 @@
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
 
+## よくあるエラー
+
+| ログ | 意味 | 対処 |
+|---|---|---|
+| `mkdir '/var/task/data'` / `DATABASE_URL is required on Vercel` | Vercel に Neon 未接続 | Vercel Storage で Neon 接続 → Redeploy → `runOnce` 再実行 |
+| `Unauthorized` / 401 | `INGEST_SECRET` 不一致 | Vercel と GAS の値を揃える |
+| Gemini `429` / `404` | モデル or 無料枠 | `GEMINI_MODEL` を `gemini-3.5-flash-lite` 等に変更 |
+
 ## 監視サイト（FEEDS）
 
 | source | 種別 | 内容 |

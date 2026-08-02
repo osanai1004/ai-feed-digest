@@ -11,6 +11,22 @@ function hasDatabaseUrl() {
   return Boolean(process.env.DATABASE_URL?.trim());
 }
 
+/** Vercel の Serverless ではローカル JSON 書き込み不可 */
+function isVercelRuntime() {
+  return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+}
+
+function assertWritableStorage() {
+  if (hasDatabaseUrl()) return;
+  if (isVercelRuntime()) {
+    const err = new Error(
+      "DATABASE_URL is required on Vercel. Connect Neon (Storage / Marketplace) and redeploy. Local JSON store cannot write under /var/task.",
+    ) as Error & { status?: number };
+    err.status = 503;
+    throw err;
+  }
+}
+
 function sqlClient() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set");
@@ -124,6 +140,7 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
   };
 
   if (!hasDatabaseUrl()) {
+    assertWritableStorage();
     const current = readLocalArticles().filter((a) => a.url !== article.url);
     current.unshift(article);
     writeLocalArticles(current);
