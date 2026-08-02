@@ -10,7 +10,7 @@
  *    - INGEST_SECRET  : Vercel と同じ秘密文字列
  *    - SLACK_WEBHOOK_URL : (任意) Incoming Webhook URL。未設定なら通知スキップ
  *    - APP_BASE_URL   : (任意) https://<your-vercel-app>.vercel.app
- *    - GEMINI_MODEL   : (任意) 既定 gemini-2.5-flash-lite
+ *    - GEMINI_MODEL   : (任意) 既定 gemini-3.5-flash-lite
  * 4. runOnce を手動実行して認可
  * 5. createDailyTrigger を実行
  */
@@ -85,7 +85,7 @@ var FEEDS = [
   },
 ];
 
-var DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+var DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 var MAX_ITEMS_PER_FEED = 2;
 var SLEEP_MS_BETWEEN_CALLS = 8000;
 
