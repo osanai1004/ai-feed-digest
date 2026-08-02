@@ -73,8 +73,8 @@ npx vercel --prod --yes
 4. `runOnce` を手動実行（初回認可あり）
 5. 必要なら `createDailyTrigger` を実行
 
-監視対象（初期設定）: OpenAI / Claude / Claude Code / Google DeepMind / Google AI / Gemini  
-Slack 通知は Webhook 未設定ならスキップ（後から有効化可）。
+監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js  
+詳細は `gas/README.md`。Slack 通知は Webhook 未設定ならスキップ（後から有効化可）。
 
 ## API
 

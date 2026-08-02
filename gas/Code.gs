@@ -29,6 +29,11 @@ var FEEDS = [
     url: "https://code.claude.com/docs/en/changelog/rss.xml",
   },
   {
+    source: "Anthropic News",
+    // Anthropic公式RSSがないため、公開メンテのフィードを利用
+    url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml",
+  },
+  {
     source: "Google DeepMind",
     url: "https://deepmind.google/blog/rss.xml",
   },
@@ -39,6 +44,31 @@ var FEEDS = [
   {
     source: "Gemini",
     url: "https://blog.google/products/gemini/rss/",
+  },
+  {
+    source: "Cursor Changelog",
+    url: "https://cursor.com/changelog/rss.xml",
+  },
+  {
+    source: "Cursor Blog",
+    // 公式 blog RSS が不安定なため、公開メンテのフィードを利用
+    url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_cursor.xml",
+  },
+  {
+    source: "Laravel",
+    url: "https://blog.laravel.com/feed",
+  },
+  {
+    source: "Laravel Framework",
+    url: "https://github.com/laravel/framework/releases.atom",
+  },
+  {
+    source: "Vercel",
+    url: "https://vercel.com/atom",
+  },
+  {
+    source: "Next.js",
+    url: "https://nextjs.org/feed.xml",
   },
 ];
 

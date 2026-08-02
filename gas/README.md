@@ -17,14 +17,21 @@
 
 ## 監視サイト（FEEDS）
 
-| source | 内容 |
-|---|---|
-| OpenAI | OpenAI News 公式 RSS |
-| Claude | Claude Blog（公開メンテフィード） |
-| Claude Code | Claude Code changelog 公式 RSS |
-| Google DeepMind | DeepMind Blog 公式 RSS |
-| Google AI | Google Blog AI 公式 RSS |
-| Gemini | Gemini 製品ブログ公式 RSS |
+| source | 種別 | 内容 |
+|---|---|---|
+| OpenAI | 公式 | OpenAI News |
+| Claude | 準公式フィード | Claude Blog |
+| Claude Code | 公式 | Claude Code changelog |
+| Anthropic News | 準公式フィード | Anthropic News |
+| Google DeepMind | 公式 | DeepMind Blog |
+| Google AI | 公式 | Google Blog AI |
+| Gemini | 公式 | Gemini 製品ブログ |
+| Cursor Changelog | 公式 | Cursor 更新履歴 |
+| Cursor Blog | 準公式フィード | Cursor Blog（公式RSS不安定のため） |
+| Laravel | 公式 | Laravel Blog |
+| Laravel Framework | 公式 | GitHub Releases |
+| Vercel | 公式 | Vercel News |
+| Next.js | 公式 | Next.js Blog |
 
 - 1サイトあたり最大3件/実行
 - 失敗したサイトはスキップして他は継続
