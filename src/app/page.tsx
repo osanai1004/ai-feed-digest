@@ -27,12 +27,7 @@ export default async function HomePage() {
           <span className="inline-flex items-center rounded-full bg-gradient-to-r from-teal-500 to-sky-500 px-3 py-1 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
             Daily Catch-up
           </span>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <span className="animate-float inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 to-sky-500 text-lg text-white shadow-md">
-              ✦
-            </span>
-          </div>
+          <ThemeToggle />
         </div>
         <h1
           className="max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]"
