@@ -322,7 +322,9 @@ function normalizeMultilineText_(value) {
 }
 
 function normalizePlainText_(value) {
-  return normalizeMultilineText_(value).replace(/\s*\n+\s*/g, " ").trim();
+  return normalizeMultilineText_(value)
+    .replace(/\s*\n+\s*/g, " ")
+    .trim();
 }
 
 /**
@@ -335,8 +337,7 @@ function repairExistingArticles() {
   var ingestUrl = props.getProperty("INGEST_URL");
   var ingestSecret = props.getProperty("INGEST_SECRET");
   var appBaseUrl = (props.getProperty("APP_BASE_URL") || "").replace(/\/$/, "");
-  var geminiModel =
-    props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
+  var geminiModel = props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
 
   if (!apiKey || !ingestUrl || !ingestSecret || !appBaseUrl) {
     throw new Error(
@@ -392,7 +393,9 @@ function repairExistingArticles() {
         publishedAt: article.publishedAt,
         summary: {
           conclusion: conclusion,
-          situations: (article.summary.situations || []).map(normalizePlainText_),
+          situations: (article.summary.situations || []).map(
+            normalizePlainText_,
+          ),
         },
       });
       fixed += 1;
@@ -430,7 +433,7 @@ function translateTitleWithGemini_(apiKey, model, source, title, conclusion) {
 
   var prompt =
     "次の英語タイトルを、自然な日本語のニュース見出しに翻訳してください。\n" +
-    "必ず次のJSONだけを返す（説明文禁止）: {\"title\":\"日本語見出し\"}\n" +
+    '必ず次のJSONだけを返す（説明文禁止）: {"title":"日本語見出し"}\n' +
     "- 直訳調やカタカナ多用を避け、ネイティブが読む見出しにする\n" +
     "- 固有名詞（Next.js / Claude / OpenAI 等）は残してよい\n" +
     "- 40文字以内を目安\n\n" +
@@ -460,7 +463,10 @@ function translateTitleWithGemini_(apiKey, model, source, title, conclusion) {
   var data = JSON.parse(text);
   var raw = (((data.candidates || [])[0] || {}).content || {}).parts || [];
   var content = (raw[0] && raw[0].text) || "";
-  content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
+  content = content
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
   var parsed = JSON.parse(content);
   var titleJa = normalizePlainText_(parsed.title);
   if (!titleJa) throw new Error("empty translated title");
