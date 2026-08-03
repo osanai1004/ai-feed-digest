@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { Card } from "@/components/ui/card";
+import { SearchField } from "@/components/ui/search-field";
 import { buildListHref } from "@/lib/articleFilters";
 import type { GenreSlug } from "@/lib/constants";
 
@@ -15,6 +18,25 @@ type Props = {
   totalCount: number;
 };
 
+function GenreChip({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`ui-chip transition${active ? " ui-chip-brand" : " ui-chip-soft"}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export function ArticleListControls({
   q,
   genre,
@@ -23,19 +45,15 @@ export function ArticleListControls({
   totalCount,
 }: Props) {
   return (
-    <section className="animate-rise mb-5 rounded-[24px] border border-[var(--hairline)] bg-[var(--card-soft)] p-4 shadow-[var(--shadow)] backdrop-blur sm:p-5">
+    <Card soft className="animate-rise mb-5 p-4 sm:p-5">
       <form action="/" method="get" className="flex flex-col gap-3 sm:flex-row">
         {genre ? <input type="hidden" name="genre" value={genre} /> : null}
-        <label className="sr-only" htmlFor="article-search">
-          記事を検索
-        </label>
-        <input
+        <SearchField
           id="article-search"
           name="q"
-          type="search"
           defaultValue={q}
           placeholder="タイトル・本文から検索…"
-          className="min-w-0 flex-1 rounded-2xl border border-[var(--hairline)] bg-[var(--card)] px-4 py-3 text-[14px] font-medium text-[var(--ink)] outline-none transition placeholder:text-[var(--mute)] focus:border-[var(--accent)]"
+          label="記事を検索"
         />
         <button
           type="submit"
@@ -50,48 +68,18 @@ export function ArticleListControls({
           ジャンルで絞り込み
         </p>
         <div className="flex flex-wrap gap-2">
-          <Link
-            href={buildListHref({ q })}
-            className="rounded-full px-3 py-1.5 text-[12px] font-bold transition"
-            style={
-              !genre
-                ? {
-                    background: "linear-gradient(90deg, #14b8a6, #38bdf8)",
-                    color: "#fff",
-                  }
-                : {
-                    background: "var(--canvas)",
-                    color: "var(--ink-soft)",
-                    border: "1px solid var(--hairline)",
-                  }
-            }
-          >
+          <GenreChip href={buildListHref({ q })} active={!genre}>
             すべて
-          </Link>
-          {genres.map((item) => {
-            const active = genre === item.slug;
-            return (
-              <Link
-                key={item.slug}
-                href={buildListHref({ q, genre: item.slug })}
-                className="rounded-full px-3 py-1.5 text-[12px] font-bold transition"
-                style={
-                  active
-                    ? {
-                        background: "linear-gradient(90deg, #14b8a6, #38bdf8)",
-                        color: "#fff",
-                      }
-                    : {
-                        background: "var(--canvas)",
-                        color: "var(--ink-soft)",
-                        border: "1px solid var(--hairline)",
-                      }
-                }
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          </GenreChip>
+          {genres.map((item) => (
+            <GenreChip
+              key={item.slug}
+              href={buildListHref({ q, genre: item.slug })}
+              active={genre === item.slug}
+            >
+              {item.label}
+            </GenreChip>
+          ))}
         </div>
       </div>
 
@@ -106,6 +94,6 @@ export function ArticleListControls({
           </span>
         ) : null}
       </p>
-    </section>
+    </Card>
   );
 }

@@ -24,6 +24,10 @@
   --cta-bg: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 55%, #fb923c 100%);
   --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   --shadow-hover: 0 18px 40px rgba(15, 23, 42, 0.14);
+  --radius-card: 24px;
+  --radius-hero: 28px;
+  --gradient-brand: linear-gradient(90deg, #14b8a6, #38bdf8);
+  --gradient-brand-text: linear-gradient(90deg, #14b8a6, #38bdf8, #fb923c);
   --bg-glow-1: #dbeafe;
   --bg-glow-2: #ccfbf1;
   --bg-glow-3: #ffedd5;
@@ -53,6 +57,10 @@
   --cta-bg: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 55%, #fb923c 100%);
   --shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
   --shadow-hover: 0 20px 44px rgba(0, 0, 0, 0.45);
+  --radius-card: 24px;
+  --radius-hero: 28px;
+  --gradient-brand: linear-gradient(90deg, #14b8a6, #38bdf8);
+  --gradient-brand-text: linear-gradient(90deg, #14b8a6, #38bdf8, #fb923c);
   --bg-glow-1: rgba(37, 99, 235, 0.22);
   --bg-glow-2: rgba(20, 184, 166, 0.18);
   --bg-glow-3: rgba(249, 115, 22, 0.16);
@@ -140,6 +148,160 @@ a {
 .cta-button:hover {
   transform: scale(1.02);
   filter: brightness(1.05);
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.text-brand-gradient {
+  background-image: var(--gradient-brand-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ui-card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.ui-card-soft {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--hairline);
+  background: var(--card-soft);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.ui-hero {
+  border-radius: var(--radius-hero);
+  border: 1px solid var(--hairline);
+  background: var(--card-soft);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.ui-detail-shell {
+  border-radius: var(--radius-hero);
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.ui-source-topbar {
+  height: 0.5rem;
+  width: 100%;
+  background: linear-gradient(90deg, var(--source-bar), #38bdf8, #fb923c);
+}
+
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ui-chip-teal {
+  background: var(--chip-teal-bg);
+  color: var(--chip-teal-fg);
+}
+
+.ui-chip-orange {
+  background: var(--chip-orange-bg);
+  color: var(--chip-orange-fg);
+}
+
+.ui-chip-sky {
+  background: var(--chip-sky-bg);
+  color: var(--chip-sky-fg);
+}
+
+.ui-chip-soft {
+  background: var(--canvas);
+  color: var(--ink-soft);
+  border: 1px solid var(--hairline);
+}
+
+.ui-chip-brand {
+  background: var(--gradient-brand);
+  color: #fff;
+}
+
+.ui-source-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--source-badge-bg);
+  color: var(--source-badge-fg);
+}
+
+.ui-source-bar {
+  background: var(--source-bar);
+}
+
+.ui-pill-link {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid var(--hairline);
+  background: var(--card-soft);
+  padding: 0.5rem 1rem;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: transform 0.15s ease;
+}
+
+.ui-pill-link:hover {
+  transform: translateY(-2px);
+}
+
+.ui-search-field {
+  min-width: 0;
+  flex: 1;
+  border-radius: 1rem;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  padding: 0.75rem 1rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ui-search-field::placeholder {
+  color: var(--mute);
+}
+
+.ui-search-field:focus {
+  border-color: var(--accent);
+}
+
+.ui-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  background-image: linear-gradient(90deg, #14b8a6, #38bdf8);
+  padding: 0.25rem 0.75rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
+}
+
+.ui-panel {
+  background: var(--panel);
 }
 
 .sr-only {

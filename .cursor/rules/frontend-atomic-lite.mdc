@@ -1,0 +1,52 @@
+---
+description: 薄い Atomic Design に基づくフロント部品化ルール
+globs: src/**/*.{tsx,jsx}
+alwaysApply: false
+---
+
+# Frontend Atomic Lite
+
+このプロジェクトのフロントは、教科書どおりの5層 Atomic ではなく **薄い部品化** で進める。
+
+## 1. 同じ見た目が2回出たら部品化する
+
+- 同一またはほぼ同一の UI が2箇所に出たら、その時点でコンポーネントへ切り出す
+- 「あとでまとめる」は禁止。差分レビューでも重複 UI を指摘対象にする
+- 1回しか使わない画面固有レイアウトは、無理に抽象化しない（YAGNI）
+
+```tsx
+// ❌ BAD: 同じバッジ見た目を page と detail にコピペ
+<span className="rounded-full bg-gradient-to-r from-teal-500 to-sky-500 ...">AI更新要約</span>
+
+// ✅ GOOD: 2回目で切り出す
+<BrandBadge>AI更新要約</BrandBadge>
+```
+
+## 2. 部品は props で見た目と文言を受ける
+
+- 文言・バリエーション・サイズなどは props で受け、呼び出し側にハードコードを残さない
+- 部品内に特定画面名や特定記事データへの依存を持たせない（再利用できる境界を保つ）
+- データ取得は page / route 側。部品は表示と軽い UI 振る舞いだけ持つ
+
+```tsx
+// ❌ BAD
+export function SourceBadge() {
+  return <span>OpenAI</span>; // 中身固定
+}
+
+// ✅ GOOD
+export function SourceBadge({ label, tone }: { label: string; tone?: "teal" | "sky" }) {
+  return <span data-tone={tone}>{label}</span>;
+}
+```
+
+## 3. フォルダは最初の2段階だけ
+
+```
+src/components/ui/     # 原子に近い汎用部品（Badge, Button, Chip など）
+src/components/        # 画面部品（ArticleListControls, ThemeToggle など）
+```
+
+- `atoms/molecules/organisms/templates/pages` の厳密分割はまだやらない
+- `page.tsx` はデータ取得と組み立て役に寄せ、細部の見た目は上記部品へ移す
+- インライン `style={{...}}` の散在は避け、共通値は CSS 変数 / 共用 class へ寄せる
