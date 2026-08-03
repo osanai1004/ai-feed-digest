@@ -1,10 +1,22 @@
 import Link from "next/link";
+import { ArticleListControls } from "@/components/article-list-controls";
+import { ArticlePagination } from "@/components/article-pagination";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  availableGenres,
+  filterArticles,
+  paginateArticles,
+  parseArticleListQuery,
+} from "@/lib/articleFilters";
 import { listArticles, storageMode } from "@/lib/store";
 import { styleForSource } from "@/lib/sourceStyles";
 import { toSingleLine } from "@/lib/text";
 
 export const dynamic = "force-dynamic";
+
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
 function formatDate(value: string) {
   try {
@@ -17,9 +29,13 @@ function formatDate(value: string) {
   }
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: Props) {
   const articles = await listArticles();
   const mode = storageMode();
+  const query = parseArticleListQuery(await searchParams);
+  const genres = availableGenres(articles);
+  const filtered = filterArticles(articles, query);
+  const pageResult = paginateArticles(filtered, query.page);
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-8 sm:px-6">
@@ -74,51 +90,87 @@ export default async function HomePage() {
         </div>
       </header>
 
+      <ArticleListControls
+        q={query.q}
+        genre={query.genre}
+        genres={genres}
+        resultCount={filtered.length}
+        totalCount={articles.length}
+      />
+
       <section className="grid gap-4">
-        {articles.map((article, index) => {
-          const tone = styleForSource(article.source);
-          return (
-            <Link
-              key={article.id}
-              href={`/articles/${article.id}`}
-              className="animate-rise group relative overflow-hidden rounded-[24px] border border-[var(--hairline)] bg-[var(--card)] p-5 shadow-[var(--shadow)] transition duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-hover)] sm:p-6"
-              style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}
+        {pageResult.items.length === 0 ? (
+          <div className="rounded-[24px] border border-[var(--hairline)] bg-[var(--card)] p-8 text-center shadow-[var(--shadow)]">
+            <p
+              className="text-[18px] font-bold"
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
             >
-              <div
-                className="absolute inset-y-0 left-0 w-1.5"
-                style={{ background: tone.bar }}
-              />
-              <div className="mb-3 flex items-center justify-between gap-3 pl-2">
-                <span
-                  className="rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.04em]"
-                  style={{ background: tone.badge, color: tone.text }}
-                >
-                  {article.source}
-                </span>
-                <time
-                  dateTime={article.publishedAt}
-                  className="text-[12px] font-semibold text-[var(--mute)]"
-                >
-                  {formatDate(article.publishedAt)}
-                </time>
-              </div>
-              <h2
-                className="pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] transition group-hover:text-[var(--accent-strong)] sm:text-[24px]"
-                style={{ fontFamily: "var(--font-display), sans-serif" }}
-              >
-                {article.title}
-              </h2>
-              <p className="mt-3 line-clamp-2 pl-2 text-[14px] leading-6 text-[var(--body)]">
-                {toSingleLine(article.summary.conclusion)}
-              </p>
-              <div className="mt-4 flex items-center justify-between pl-2 text-[12px] font-bold text-[var(--accent)]">
-                <span>要約を読む</span>
-                <span className="transition group-hover:translate-x-1">→</span>
-              </div>
+              該当する記事がありません
+            </p>
+            <p className="mt-2 text-[14px] leading-6 text-[var(--body)]">
+              検索語やジャンルを変えて、もう一度試してください。
+            </p>
+            <Link
+              href="/"
+              className="mt-5 inline-flex rounded-full border border-[var(--hairline)] bg-[var(--card-soft)] px-4 py-2 text-[12px] font-bold text-[var(--ink-soft)]"
+            >
+              条件をクリア
             </Link>
-          );
-        })}
+          </div>
+        ) : (
+          pageResult.items.map((article, index) => {
+            const tone = styleForSource(article.source);
+            return (
+              <Link
+                key={article.id}
+                href={`/articles/${article.id}`}
+                className="animate-rise group relative overflow-hidden rounded-[24px] border border-[var(--hairline)] bg-[var(--card)] p-5 shadow-[var(--shadow)] transition duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-hover)] sm:p-6"
+                style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}
+              >
+                <div
+                  className="absolute inset-y-0 left-0 w-1.5"
+                  style={{ background: tone.bar }}
+                />
+                <div className="mb-3 flex items-center justify-between gap-3 pl-2">
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.04em]"
+                    style={{ background: tone.badge, color: tone.text }}
+                  >
+                    {article.source}
+                  </span>
+                  <time
+                    dateTime={article.publishedAt}
+                    className="text-[12px] font-semibold text-[var(--mute)]"
+                  >
+                    {formatDate(article.publishedAt)}
+                  </time>
+                </div>
+                <h2
+                  className="pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] transition group-hover:text-[var(--accent-strong)] sm:text-[24px]"
+                  style={{ fontFamily: "var(--font-display), sans-serif" }}
+                >
+                  {article.title}
+                </h2>
+                <p className="mt-3 line-clamp-2 pl-2 text-[14px] leading-6 text-[var(--body)]">
+                  {toSingleLine(article.summary.conclusion)}
+                </p>
+                <div className="mt-4 flex items-center justify-between pl-2 text-[12px] font-bold text-[var(--accent)]">
+                  <span>要約を読む</span>
+                  <span className="transition group-hover:translate-x-1">→</span>
+                </div>
+              </Link>
+            );
+          })
+        )}
       </section>
+
+      <ArticlePagination
+        q={query.q}
+        genre={query.genre}
+        page={pageResult.page}
+        totalPages={pageResult.totalPages}
+        total={pageResult.total}
+      />
     </main>
   );
 }
