@@ -26,7 +26,7 @@ export default async function HomePage() {
       <header className="animate-rise mb-8 overflow-hidden rounded-[28px] border border-[var(--hairline)] bg-[var(--card-soft)] p-6 shadow-[var(--shadow)] backdrop-blur sm:p-8">
         <div className="mb-5 flex items-center justify-between gap-3">
           <span className="inline-flex items-center rounded-full bg-gradient-to-r from-teal-500 to-sky-500 px-3 py-1 text-[11px] font-bold tracking-[0.08em] text-white">
-            AIひと目
+            AI更新要約
           </span>
           <ThemeToggle />
         </div>
@@ -34,15 +34,14 @@ export default async function HomePage() {
           className="max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          公式アップデートを、
+          ChatGPT・Claude・Geminiの
           <span className="bg-gradient-to-r from-teal-500 via-sky-500 to-orange-400 bg-clip-text text-transparent">
-            結論カード
+            公式更新を要約
           </span>
-          で
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-7 text-[var(--body)]">
-          ChatGPT・Claude・Geminiなどの新着を、使える場面つきで30秒把握。
-          気になったときだけ元記事へ。
+          結論と「使える場面」つきのカードで毎日キャッチアップ。
+          気になった更新だけ元記事を開けばOK。
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-[12px] font-semibold">
           <span

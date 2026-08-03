@@ -205,7 +205,7 @@ function notifySlack_(webhookUrl, appBaseUrl, articles) {
   });
 
   var text =
-    ":sparkles: *AIひと目* に新着 " +
+    ":sparkles: *AI更新要約* に新着 " +
     articles.length +
     " 件\n\n" +
     lines.join("\n\n");
