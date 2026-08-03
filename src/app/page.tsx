@@ -25,8 +25,8 @@ export default async function HomePage() {
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-8 sm:px-6">
       <header className="animate-rise mb-8 overflow-hidden rounded-[28px] border border-[var(--hairline)] bg-[var(--card-soft)] p-6 shadow-[var(--shadow)] backdrop-blur sm:p-8">
         <div className="mb-5 flex items-center justify-between gap-3">
-          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-teal-500 to-sky-500 px-3 py-1 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
-            Daily Catch-up
+          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-teal-500 to-sky-500 px-3 py-1 text-[11px] font-bold tracking-[0.08em] text-white">
+            AIひと目
           </span>
           <ThemeToggle />
         </div>
@@ -34,13 +34,15 @@ export default async function HomePage() {
           className="max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          AIの更新を、
+          公式アップデートを、
           <span className="bg-gradient-to-r from-teal-500 via-sky-500 to-orange-400 bg-clip-text text-transparent">
-            ポップに把握
+            結論カード
           </span>
+          で
         </h1>
         <p className="mt-4 max-w-xl text-[15px] leading-7 text-[var(--body)]">
-          結論と使える場面つき。カードをタップしてサクッと読んで、必要なら元記事へ。
+          ChatGPT・Claude・Geminiなどの新着を、使える場面つきで30秒把握。
+          気になったときだけ元記事へ。
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-[12px] font-semibold">
           <span
@@ -50,7 +52,7 @@ export default async function HomePage() {
               color: "var(--chip-teal-fg)",
             }}
           >
-            {articles.length} articles
+            {articles.length}件の要約
           </span>
           <span
             className="rounded-full px-3 py-1"
@@ -59,7 +61,7 @@ export default async function HomePage() {
               color: "var(--chip-orange-fg)",
             }}
           >
-            summary first
+            結論ファースト
           </span>
           <span
             className="rounded-full px-3 py-1"
@@ -68,7 +70,7 @@ export default async function HomePage() {
               color: "var(--chip-sky-fg)",
             }}
           >
-            {mode === "neon" ? "neon db" : "local / seed"}
+            {mode === "neon" ? "自動収集中" : "サンプル表示"}
           </span>
         </div>
       </header>

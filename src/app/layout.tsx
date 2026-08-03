@@ -16,11 +16,12 @@ const ui = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "AI Feed Digest",
-  description: "AI公式情報を要約して毎日キャッチアップする個人用リーダー",
+  title: "AIひと目",
+  description:
+    "ChatGPT・Claude・Geminiなどの公式更新を、結論と使える場面つきのカードで毎日キャッチアップ",
   appleWebApp: {
     capable: true,
-    title: "AI Feed Digest",
+    title: "AIひと目",
     statusBarStyle: "default",
   },
 };
