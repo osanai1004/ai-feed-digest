@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { neon } from "@neondatabase/serverless";
 import { SEED_ARTICLES } from "./seed";
+import { normalizeMultilineText } from "./text";
 import type { Article, IngestPayload } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -33,14 +34,30 @@ async function ensureSchema() {
   `;
 }
 
+function normalizeArticle(article: Article): Article {
+  return {
+    ...article,
+    title: article.title.trim(),
+    summary: {
+      conclusion: normalizeMultilineText(article.summary.conclusion),
+      situations: article.summary.situations.map((s) =>
+        normalizeMultilineText(String(s)),
+      ),
+    },
+  };
+}
+
 function readLocalArticles(): Article[] {
-  if (!existsSync(DATA_FILE)) return [...SEED_ARTICLES];
+  if (!existsSync(DATA_FILE)) return SEED_ARTICLES.map(normalizeArticle);
   try {
     const raw = readFileSync(DATA_FILE, "utf8");
     const parsed = JSON.parse(raw) as Article[];
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...SEED_ARTICLES];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return SEED_ARTICLES.map(normalizeArticle);
+    }
+    return parsed.map(normalizeArticle);
   } catch {
-    return [...SEED_ARTICLES];
+    return SEED_ARTICLES.map(normalizeArticle);
   }
 }
 
@@ -60,13 +77,42 @@ function makeId(source: string, url: string) {
 }
 
 function normalizeSummary(summary: IngestPayload["summary"]) {
-  const situations = (summary.situations ?? []).filter(Boolean).slice(0, 3);
+  const situations = (summary.situations ?? [])
+    .filter(Boolean)
+    .map((s) => normalizeMultilineText(String(s)).trim())
+    .slice(0, 3);
   while (situations.length < 3) {
     situations.push("（シチュエーション未入力）");
   }
   return {
-    conclusion: summary.conclusion?.trim() || "（結論未入力）",
+    conclusion:
+      normalizeMultilineText(summary.conclusion ?? "").trim() ||
+      "（結論未入力）",
     situations,
+  };
+}
+
+function mapArticleRow(row: Record<string, unknown>): Article {
+  const situationsRaw = row.situations;
+  const situations = Array.isArray(situationsRaw)
+    ? situationsRaw.map(String)
+    : JSON.parse(String(situationsRaw));
+
+  return {
+    id: String(row.id),
+    source: String(row.source),
+    title: String(row.title),
+    url: String(row.url),
+    publishedAt: new Date(
+      String(row.published_at ?? row.created_at),
+    ).toISOString(),
+    summary: {
+      conclusion: normalizeMultilineText(String(row.conclusion)),
+      situations: situations.map((s: string) =>
+        normalizeMultilineText(String(s)),
+      ),
+    },
+    createdAt: new Date(String(row.created_at)).toISOString(),
   };
 }
 
@@ -85,22 +131,9 @@ export async function listArticles(): Promise<Article[]> {
     ORDER BY COALESCE(published_at, created_at) DESC
   `;
 
-  if (rows.length === 0) return [...SEED_ARTICLES];
+  if (rows.length === 0) return SEED_ARTICLES.map(normalizeArticle);
 
-  return rows.map((row) => ({
-    id: String(row.id),
-    source: String(row.source),
-    title: String(row.title),
-    url: String(row.url),
-    publishedAt: new Date(String(row.published_at ?? row.created_at)).toISOString(),
-    summary: {
-      conclusion: String(row.conclusion),
-      situations: Array.isArray(row.situations)
-        ? row.situations.map(String)
-        : JSON.parse(String(row.situations)),
-    },
-    createdAt: new Date(String(row.created_at)).toISOString(),
-  }));
+  return rows.map((row) => mapArticleRow(row as Record<string, unknown>));
 }
 
 export async function getArticle(id: string): Promise<Article | null> {

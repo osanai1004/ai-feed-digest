@@ -127,10 +127,13 @@ function runOnce() {
 
         var payload = {
           source: feed.source,
-          title: item.title,
+          title: summary.title || item.title,
           url: item.link,
           publishedAt: item.pubDate || new Date().toISOString(),
-          summary: summary,
+          summary: {
+            conclusion: summary.conclusion,
+            situations: summary.situations,
+          },
         };
 
         postIngest_(ingestUrl, ingestSecret, payload);
@@ -238,10 +241,15 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "あなたはAIプロダクト更新を実務知識に翻訳する編集者です。\n" +
     "次の記事を日本語で要約してください。\n" +
     "必ず次のJSONだけを返してください（前後に説明文やコードフェンス禁止）。\n" +
-    '{\n  "conclusion": "結論を3行程度。改行は\\\\nで区切る",\n' +
-    '  "situations": ["使えるシチュエーション1", "2", "3"]\n}\n\n' +
+    "{\n" +
+    '  "title": "自然な日本語の見出し（簡潔・ニュース見出し調。英単語の直訳調は避ける）",\n' +
+    '  "conclusion": "結論を3行程度。各行は実際の改行で区切る",\n' +
+    '  "situations": ["使えるシチュエーション1", "2", "3"]\n' +
+    "}\n\n" +
     "要件:\n" +
+    "- title は必ず日本語。固有名詞（Next.js / Claude 等）だけ英語可\n" +
     "- 結論ファーストで、何が言えるかを先に書く\n" +
+    "- conclusion 内に文字としての \\\\n を書かない。普通の改行を使う\n" +
     "- situations は現実の業務で使える場面を3点\n" +
     "- やや詳しめ。ただし冗長にしない\n" +
     "- 不明点は推測で埋めない\n\n" +
@@ -290,12 +298,173 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
       throw new Error("Gemini response missing fields: " + content);
     }
     return {
-      conclusion: String(parsed.conclusion),
-      situations: parsed.situations.map(String).slice(0, 3),
+      title: normalizePlainText_(parsed.title || title),
+      conclusion: normalizeMultilineText_(parsed.conclusion),
+      situations: parsed.situations
+        .map(function (s) {
+          return normalizePlainText_(s);
+        })
+        .slice(0, 3),
     };
   }
 
   throw lastError || new Error("Gemini API failed after retries");
+}
+
+/** 文字としての \\n を実改行へ */
+function normalizeMultilineText_(value) {
+  return String(value || "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, "\t")
+    .replace(/\r\n/g, "\n")
+    .trim();
+}
+
+function normalizePlainText_(value) {
+  return normalizeMultilineText_(value).replace(/\s*\n+\s*/g, " ").trim();
+}
+
+/**
+ * 既存記事の英語タイトルと結論内の \\n を直し、再 ingest する。
+ * APP_BASE_URL / INGEST_URL / INGEST_SECRET / GOOGLE_API_KEY が必要。
+ */
+function repairExistingArticles() {
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty("GOOGLE_API_KEY");
+  var ingestUrl = props.getProperty("INGEST_URL");
+  var ingestSecret = props.getProperty("INGEST_SECRET");
+  var appBaseUrl = (props.getProperty("APP_BASE_URL") || "").replace(/\/$/, "");
+  var geminiModel =
+    props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
+
+  if (!apiKey || !ingestUrl || !ingestSecret || !appBaseUrl) {
+    throw new Error(
+      "GOOGLE_API_KEY / INGEST_URL / INGEST_SECRET / APP_BASE_URL を設定してください",
+    );
+  }
+
+  var response = UrlFetchApp.fetch(appBaseUrl + "/api/articles", {
+    muteHttpExceptions: true,
+  });
+  if (response.getResponseCode() >= 300) {
+    throw new Error(
+      "articles fetch failed: " +
+        response.getResponseCode() +
+        " " +
+        response.getContentText(),
+    );
+  }
+
+  var data = JSON.parse(response.getContentText());
+  var articles = data.articles || [];
+  var fixed = 0;
+  var skipped = 0;
+  var errors = [];
+
+  articles.forEach(function (article) {
+    try {
+      var conclusion = normalizeMultilineText_(article.summary.conclusion);
+      var needsTitle = looksEnglishTitle_(article.title);
+      var needsConclusion =
+        String(article.summary.conclusion || "").indexOf("\\n") !== -1;
+      if (!needsTitle && !needsConclusion) {
+        skipped += 1;
+        return;
+      }
+
+      var titleJa = article.title;
+      if (needsTitle) {
+        titleJa = translateTitleWithGemini_(
+          apiKey,
+          geminiModel,
+          article.source,
+          article.title,
+          conclusion,
+        );
+        Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
+      }
+
+      postIngest_(ingestUrl, ingestSecret, {
+        source: article.source,
+        title: titleJa,
+        url: article.url,
+        publishedAt: article.publishedAt,
+        summary: {
+          conclusion: conclusion,
+          situations: (article.summary.situations || []).map(normalizePlainText_),
+        },
+      });
+      fixed += 1;
+      Logger.log("repaired: " + article.title + " -> " + titleJa);
+    } catch (e) {
+      errors.push(article.title + ": " + e.message);
+      Logger.log("repair error: " + e.message);
+    }
+  });
+
+  Logger.log(
+    "repair done fixed=" +
+      fixed +
+      " skipped=" +
+      skipped +
+      " errors=" +
+      errors.length,
+  );
+  if (errors.length) Logger.log("errors: " + errors.join(" | "));
+}
+
+function looksEnglishTitle_(title) {
+  var s = String(title || "");
+  if (!s) return false;
+  // 日本語（ひらがな・カタカナ・漢字）が無ければ英語見出しとみなす
+  return !/[ぁ-んァ-ヶ一-龥]/.test(s);
+}
+
+function translateTitleWithGemini_(apiKey, model, source, title, conclusion) {
+  var endpoint =
+    "https://generativelanguage.googleapis.com/v1beta/models/" +
+    model +
+    ":generateContent?key=" +
+    encodeURIComponent(apiKey);
+
+  var prompt =
+    "次の英語タイトルを、自然な日本語のニュース見出しに翻訳してください。\n" +
+    "必ず次のJSONだけを返す（説明文禁止）: {\"title\":\"日本語見出し\"}\n" +
+    "- 直訳調やカタカナ多用を避け、ネイティブが読む見出しにする\n" +
+    "- 固有名詞（Next.js / Claude / OpenAI 等）は残してよい\n" +
+    "- 40文字以内を目安\n\n" +
+    "source: " +
+    source +
+    "\n" +
+    "title: " +
+    title +
+    "\n" +
+    "conclusion:\n" +
+    String(conclusion).slice(0, 500);
+
+  var response = UrlFetchApp.fetch(endpoint, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2 },
+    }),
+    muteHttpExceptions: true,
+  });
+  var status = response.getResponseCode();
+  var text = response.getContentText();
+  if (status >= 300) {
+    throw new Error("Gemini title translate error: " + status + " " + text);
+  }
+  var data = JSON.parse(text);
+  var raw = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+  var content = (raw[0] && raw[0].text) || "";
+  content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
+  var parsed = JSON.parse(content);
+  var titleJa = normalizePlainText_(parsed.title);
+  if (!titleJa) throw new Error("empty translated title");
+  return titleJa;
 }
 
 function postIngest_(ingestUrl, ingestSecret, payload) {

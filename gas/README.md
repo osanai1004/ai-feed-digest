@@ -15,6 +15,8 @@
 
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
+6. 既存記事の英語タイトル / 結論の `\n` 文字化け直しは `repairExistingArticles` を一度実行  
+   （`APP_BASE_URL` 必須。Gemini 呼び出しあり）
 
 ## 監視サイト（FEEDS）
 

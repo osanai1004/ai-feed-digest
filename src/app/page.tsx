@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { listArticles, storageMode } from "@/lib/store";
 import { styleForSource } from "@/lib/sourceStyles";
+import { toSingleLine } from "@/lib/text";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +108,7 @@ export default async function HomePage() {
                 {article.title}
               </h2>
               <p className="mt-3 line-clamp-2 pl-2 text-[14px] leading-6 text-[var(--body)]">
-                {article.summary.conclusion.replace(/\n/g, " ")}
+                {toSingleLine(article.summary.conclusion)}
               </p>
               <div className="mt-4 flex items-center justify-between pl-2 text-[12px] font-bold text-[var(--accent)]">
                 <span>要約を読む</span>
