@@ -96,8 +96,7 @@ function runOnce() {
   var ingestSecret = props.getProperty("INGEST_SECRET");
   var slackWebhook = props.getProperty("SLACK_WEBHOOK_URL");
   var appBaseUrl = props.getProperty("APP_BASE_URL");
-  var geminiModel =
-    props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
+  var geminiModel = props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
 
   if (!apiKey || !ingestUrl || !ingestSecret) {
     throw new Error(
@@ -279,10 +278,12 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     }
 
     var data = JSON.parse(text);
-    var raw =
-      (((data.candidates || [])[0] || {}).content || {}).parts || [];
+    var raw = (((data.candidates || [])[0] || {}).content || {}).parts || [];
     var content = (raw[0] && raw[0].text) || "";
-    content = content.replace(/```json/gi, "").replace(/```/g, "").trim();
+    content = content
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
     var parsed = JSON.parse(content);
     if (!parsed.conclusion || !parsed.situations) {
@@ -307,7 +308,9 @@ function postIngest_(ingestUrl, ingestSecret, payload) {
   });
   var status = response.getResponseCode();
   if (status >= 300) {
-    throw new Error("ingest failed: " + status + " " + response.getContentText());
+    throw new Error(
+      "ingest failed: " + status + " " + response.getContentText(),
+    );
   }
 }
 
@@ -318,7 +321,9 @@ function fetchRssItems_(feedUrl) {
     headers: { "User-Agent": "AI-Feed-Digest/1.0" },
   });
   if (xml.getResponseCode() >= 300) {
-    throw new Error("RSS fetch failed: " + feedUrl + " " + xml.getResponseCode());
+    throw new Error(
+      "RSS fetch failed: " + feedUrl + " " + xml.getResponseCode(),
+    );
   }
   var doc = XmlService.parse(xml.getContentText());
   var root = doc.getRootElement();
