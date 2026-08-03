@@ -32,7 +32,8 @@ ChatGPT・Claude・Gemini などの公式アップデートを RSS で集め、�
 ```bash
 npm install
 cp .env.example .env.local
-# .env.local に INGEST_SECRET を入れる
+# 画面を見るだけなら空のままでOK
+# ingest や本番DB接続をするなら INGEST_SECRET / DATABASE_URL を埋める
 npm run dev
 ```
 
