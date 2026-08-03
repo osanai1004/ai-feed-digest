@@ -16,12 +16,12 @@ const ui = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "AIひと目",
+  title: "AI更新要約",
   description:
-    "ChatGPT・Claude・Geminiなどの公式更新を、結論と使える場面つきのカードで毎日キャッチアップ",
+    "ChatGPT・Claude・Geminiなどの公式アップデートを日本語要約する個人用リーダー。結論と使える場面つき。",
   appleWebApp: {
     capable: true,
-    title: "AIひと目",
+    title: "AI更新要約",
     statusBarStyle: "default",
   },
 };
