@@ -91,8 +91,12 @@ var FEEDS = [
 ];
 
 var DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
-var MAX_ITEMS_PER_FEED = 2;
+/** RSS から見る最大件数（取り込み上限とは別。フィード長が上限） */
+var SCAN_ITEMS_PER_FEED = 50;
+/** 仕分け後、1サイトあたり取り込む最大件数（目玉更新のみ） */
+var MAX_INGEST_PER_FEED = 2;
 var SLEEP_MS_BETWEEN_CALLS = 8000;
+var SLEEP_MS_BETWEEN_FEEDS = 2000;
 
 function runOnce() {
   var props = PropertiesService.getScriptProperties();
@@ -109,7 +113,14 @@ function runOnce() {
     );
   }
 
-  Logger.log("using model=" + geminiModel);
+  Logger.log(
+    "using model=" +
+      geminiModel +
+      " scan=" +
+      SCAN_ITEMS_PER_FEED +
+      " ingestMax=" +
+      MAX_INGEST_PER_FEED,
+  );
 
   var seen = loadSeen_();
   var ingested = [];
@@ -117,10 +128,42 @@ function runOnce() {
 
   FEEDS.forEach(function (feed) {
     try {
-      var items = fetchRssItems_(feed.url).slice(0, MAX_ITEMS_PER_FEED);
-      items.forEach(function (item) {
-        if (seen[item.link]) return;
+      var items = fetchRssItems_(feed.url).slice(0, SCAN_ITEMS_PER_FEED);
+      var candidates = items.filter(function (item) {
+        return !seen[item.link];
+      });
 
+      if (candidates.length === 0) {
+        Logger.log(feed.source + ": no unseen items");
+        return;
+      }
+
+      var picks = triageImportantItems_(
+        apiKey,
+        geminiModel,
+        feed.source,
+        candidates,
+        MAX_INGEST_PER_FEED,
+      );
+      var pickUrls = {};
+      picks.forEach(function (p) {
+        pickUrls[p.link] = true;
+      });
+
+      Logger.log(
+        feed.source +
+          ": scanned=" +
+          candidates.length +
+          " picked=" +
+          picks.length,
+      );
+
+      // 見たが取り込まない記事も seen にして、翌日の再判定を避ける
+      candidates.forEach(function (item) {
+        if (!pickUrls[item.link]) seen[item.link] = true;
+      });
+
+      picks.forEach(function (item) {
         var bodyText = item.description || item.title;
         var summary = summarizeWithGemini_(
           apiKey,
@@ -148,6 +191,8 @@ function runOnce() {
         // 無料枠の RPM 制限を避ける
         Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
       });
+
+      Utilities.sleep(SLEEP_MS_BETWEEN_FEEDS);
     } catch (e) {
       errors.push(feed.source + ": " + e.message);
       Logger.log("feed error (" + feed.source + "): " + e.message);
@@ -191,9 +236,7 @@ function notifySlack_(webhookUrl, appBaseUrl, articles) {
 
   var lines = articles.map(function (a, i) {
     var conclusionSource =
-      (a.summary &&
-        a.summary.general &&
-        a.summary.general.conclusion) ||
+      (a.summary && a.summary.general && a.summary.general.conclusion) ||
       (a.summary && a.summary.conclusion) ||
       "";
     var conclusion = String(conclusionSource)
@@ -239,6 +282,122 @@ function notifySlack_(webhookUrl, appBaseUrl, articles) {
     );
   }
   Logger.log("slack notified=" + articles.length);
+}
+
+/**
+ * 未処理候補から「目玉の製品更新」だけを最大 limit 件選ぶ。
+ * 1フィードあたり Gemini 1回でバッチ判定する。
+ */
+function triageImportantItems_(apiKey, model, source, candidates, limit) {
+  if (!candidates || candidates.length === 0) return [];
+  if (!limit || limit < 1) limit = MAX_INGEST_PER_FEED;
+
+  var endpoint =
+    "https://generativelanguage.googleapis.com/v1beta/models/" +
+    model +
+    ":generateContent?key=" +
+    encodeURIComponent(apiKey);
+
+  var lines = candidates.map(function (item, index) {
+    var snippet = stripHtml_(item.description || "")
+      .replace(/\s+/g, " ")
+      .slice(0, 220);
+    return (
+      index +
+      1 +
+      ". title: " +
+      item.title +
+      "\n   url: " +
+      item.link +
+      "\n   snippet: " +
+      (snippet || "(なし)")
+    );
+  });
+
+  var prompt =
+    "あなたはAI / 開発ツールの編集長です。\n" +
+    "次の候補から、読者が知る価値のある『目玉の製品更新』だけを選んでください。\n" +
+    "必ず次のJSONだけを返してください（前後に説明文やコードフェンス禁止）。\n" +
+    '{"picks":[{"index":1,"reason":"短い理由"}]}\n\n' +
+    "選ぶもの:\n" +
+    "- 新機能リリース / 重要アップデート / GA・正式提供 / 破壊的変更 / 料金や提供条件の大きな変更\n" +
+    "- プロダクト本体の発表・バージョンアップ・API変更\n\n" +
+    "選ばないもの:\n" +
+    "- チュートリアル、How-to、事例紹介、イベント告知、採用、雑記、広告っぽい記事\n" +
+    "- 小さなTips、コミュニティ寄稿だけで製品更新が薄いもの\n\n" +
+    "制約:\n" +
+    "- 最大 " +
+    limit +
+    " 件。重要度の高い順\n" +
+    '- 該当がなければ {"picks":[]}\n' +
+    "- index は候補番号（1始まり）。候補に無い番号は禁止\n" +
+    "- reason は日本語20文字以内\n\n" +
+    "source: " +
+    source +
+    "\n\n候補:\n" +
+    lines.join("\n");
+
+  var response = UrlFetchApp.fetch(endpoint, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1 },
+    }),
+    muteHttpExceptions: true,
+  });
+
+  var status = response.getResponseCode();
+  var text = response.getContentText();
+  if (status >= 300) {
+    throw new Error("Gemini triage error: " + status + " " + text);
+  }
+
+  var data = JSON.parse(text);
+  var raw = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+  var content = (raw[0] && raw[0].text) || "";
+  content = content
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+
+  var parsed;
+  try {
+    parsed = JSON.parse(content);
+  } catch (e) {
+    throw new Error(
+      "Gemini triage JSON parse failed: " + content.slice(0, 200),
+    );
+  }
+
+  var picks = Array.isArray(parsed.picks) ? parsed.picks : [];
+  var selected = [];
+  var used = {};
+
+  picks.forEach(function (pick) {
+    if (selected.length >= limit) return;
+    var idx = Number(pick && pick.index);
+    if (!isFinite(idx) || idx < 1 || idx > candidates.length) return;
+    if (used[idx]) return;
+    used[idx] = true;
+    selected.push(candidates[idx - 1]);
+  });
+
+  return selected;
+}
+
+function stripHtml_(html) {
+  return String(html || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
 }
 
 function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
@@ -699,9 +858,7 @@ function backfillDualVoiceArticles() {
     );
   }
 
-  Logger.log(
-    "backfill done updated=" + updated + " errors=" + errors.length,
-  );
+  Logger.log("backfill done updated=" + updated + " errors=" + errors.length);
   if (errors.length) Logger.log("errors: " + errors.join(" | "));
 }
 
@@ -712,7 +869,9 @@ function buildBackfillBody_(article) {
   var engineer = summary.engineer || null;
   var lines = [];
 
-  lines.push("既存記事を2ボイス（非エンジニア向け / エンジニア向け）に再編集してください。");
+  lines.push(
+    "既存記事を2ボイス（非エンジニア向け / エンジニア向け）に再編集してください。",
+  );
   lines.push("元URL: " + (article.url || ""));
   lines.push("既存タイトル: " + (article.title || ""));
 
@@ -882,8 +1041,9 @@ function loadSeen_() {
 
 function saveSeen_(seen) {
   var keys = Object.keys(seen);
-  if (keys.length > 300) {
-    keys = keys.slice(keys.length - 300);
+  // 見る件数を増やしたので履歴も長めに保持
+  if (keys.length > 2000) {
+    keys = keys.slice(keys.length - 2000);
     var trimmed = {};
     keys.forEach(function (k) {
       trimmed[k] = true;
