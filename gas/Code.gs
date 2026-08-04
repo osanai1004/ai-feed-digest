@@ -6,10 +6,10 @@
  * 2. このファイル内容を貼り付け
  * 3. プロジェクトの設定 > スクリプト プロパティ に以下を追加
  *    - GOOGLE_API_KEY : Gemini API キー
- *    - INGEST_URL     : https://<your-vercel-app>.vercel.app/api/ingest
+ *    - INGEST_URL     : https://ai-feed-digest-ten.vercel.app/api/ingest
  *    - INGEST_SECRET  : Vercel と同じ秘密文字列
  *    - SLACK_WEBHOOK_URL : (任意) Incoming Webhook URL。未設定なら通知スキップ
- *    - APP_BASE_URL   : (任意) https://<your-vercel-app>.vercel.app
+ *    - APP_BASE_URL   : (任意) https://ai-feed-digest-ten.vercel.app
  *    - GEMINI_MODEL   : (任意) 既定 gemini-3.5-flash-lite
  * 4. runOnce を手動実行して認可
  * 5. createDailyTrigger を実行

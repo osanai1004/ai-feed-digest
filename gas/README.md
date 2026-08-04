@@ -7,10 +7,10 @@
 | プロパティ | 必須 | 値 |
 |---|---|---|
 | `GOOGLE_API_KEY` | Yes | Gemini API キー（既存キーで可） |
-| `INGEST_URL` | Yes | `https://あなたのアプリ.vercel.app/api/ingest` |
+| `INGEST_URL` | Yes | `https://ai-feed-digest-ten.vercel.app/api/ingest`（正式URLのみ） |
 | `INGEST_SECRET` | Yes | Vercel の `INGEST_SECRET` と同じ |
 | `SLACK_WEBHOOK_URL` | No | Slack Incoming Webhook。未設定なら通知しない |
-| `APP_BASE_URL` | No | `https://あなたのアプリ.vercel.app`（Slack文言用） |
+| `APP_BASE_URL` | No | `https://ai-feed-digest-ten.vercel.app`（Slack文言用。正式URLのみ） |
 | `GEMINI_MODEL` | No | 既定 `gemini-3.5-flash-lite`（無料枠向き）。だめなら `gemini-3.1-flash-lite` / `gemini-3.5-flash` |
 
 4. エディタで `runOnce` を実行（初回は権限承認）

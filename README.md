@@ -2,6 +2,14 @@
 
 ChatGPT・Claude・Gemini などの公式アップデートを RSS で集め、日本語の「結論＋使える場面」に要約して読む個人用リーダーです。
 
+## 本番URL（これだけ使う）
+
+**https://ai-feed-digest-ten.vercel.app**
+
+- Neon（Postgres）に接続済みの正式な公開URLです
+- 同じ GitHub リポジトリから作られた `ai-feed-digest-q6nz` / `vx3z` などの URL は重複プロジェクトなので使わないでください
+- 新規に「Import Project」し直すと、また別名の URL が増えます。再デプロイは既存プロジェクトの Dashboard から行ってください
+
 ## UI
 
 [VoltAgent/awesome-design-md](https://github.com/VoltAgent/awesome-design-md) の **Clay / Framer** 系を参考にした、ポップでモダンなカードUIです。
@@ -41,23 +49,36 @@ npm run dev
 
 ## 3. Vercel へデプロイ
 
-ワンクリック Import（ブラウザで Vercel / GitHub ログイン済みの状態で開く）:
+**正式プロジェクトはすでにあります。** 再 Import しないでください（別名 URL が増えます）。
 
-https://vercel.com/new/import?s=https://github.com/osanai1004/ai-feed-digest
+再デプロイする場合:
+
+1. [Vercel Dashboard](https://vercel.com/dashboard) で `ai-feed-digest-ten` を開く
+2. Deployments → 最新を Redeploy、または `main` へ push
+
+初回セットアップ時のみ（新規で作り直すとき）:
 
 1. Framework Preset: Next.js（自動検出）
 2. Environment Variables:
    - `INGEST_SECRET` = 長いランダム文字列
+   - `DATABASE_URL` = Neon の接続文字列
 3. Deploy
-4. （あとで推奨）Marketplace で Neon Free を接続して `DATABASE_URL` を入れる
 
-CLI 例:
+CLI 例（既存プロジェクトに link する）:
 
 ```bash
-npx vercel link --yes
-npx vercel env add INGEST_SECRET production
+npx vercel link --yes --project ai-feed-digest-ten
 npx vercel --prod --yes
 ```
+
+### 重複プロジェクトの削除（1URLに統一）
+
+同じリポジトリに複数プロジェクトが繋がっている場合、Vercel Dashboard で次を削除してください（`ai-feed-digest-ten` 以外）:
+
+- `ai-feed-digest` / `ai-feed-digest-q6nz` / `ai-feed-digest-vx3z` / `ai-feed-digest-d1jy` / `ai-feed-digest-hai4` / `ai-feed-digest-xm8t`
+
+手順: 各プロジェクト → Settings → General → Delete Project  
+（または Settings → Git → Disconnect だけでも、以後の自動デプロイは止まります）
 
 ## 4. GAS 連携
 
@@ -67,10 +88,10 @@ npx vercel --prod --yes
 2. `gas/Code.gs` を貼り付け
 3. スクリプトプロパティ:
    - `GOOGLE_API_KEY` = Gemini API キー
-   - `INGEST_URL` = `https://<your-app>.vercel.app/api/ingest`
+   - `INGEST_URL` = `https://ai-feed-digest-ten.vercel.app/api/ingest`
    - `INGEST_SECRET` = Vercel と同じ値
    - `SLACK_WEBHOOK_URL` = （任意）Slack Incoming Webhook
-   - `APP_BASE_URL` = （任意）アプリURL
+   - `APP_BASE_URL` = `https://ai-feed-digest-ten.vercel.app`
 4. `runOnce` を手動実行（初回認可あり）
 5. 必要なら `createDailyTrigger` を実行
 
@@ -105,6 +126,6 @@ Content-Type: application/json
 
 ## iPhone での見方
 
-1. Safari で Vercel URL を開く
+1. Safari で https://ai-feed-digest-ten.vercel.app を開く
 2. 共有 → **ホーム画面に追加**
 3. 一覧タップ → 要約確認 → 必要なら「元記事で詳細を確認する」
