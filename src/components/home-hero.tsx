@@ -1,33 +1,42 @@
 import Image from "next/image";
+import Link from "next/link";
 import { BrandBadge } from "@/components/ui/brand-badge";
-import { Chip } from "@/components/ui/chip";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { APP_DESCRIPTION_LINES, APP_NAME } from "@/lib/constants";
+import { formatDate } from "@/lib/formatDate";
 
 type Props = {
-  articleCount: number;
-  storageMode: "neon" | "local-json";
+  lastUpdatedAt: string | null;
 };
 
-export function HomeHero({ articleCount, storageMode }: Props) {
+export function HomeHero({ lastUpdatedAt }: Props) {
   return (
     <header className="ui-hero animate-rise mb-8 overflow-hidden p-6 sm:p-8">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 rounded-[12px] outline-offset-2 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+          aria-label={`${APP_NAME}のトップへ`}
+        >
           <Image
             src="/brand/logo.png"
-            alt={`${APP_NAME}のロゴ`}
+            alt=""
             width={36}
             height={36}
             className="size-9 rounded-[10px] shadow-sm"
             priority
           />
           <BrandBadge>更新要約</BrandBadge>
-        </div>
+        </Link>
         <ThemeToggle />
       </div>
       <h1 className="font-display max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]">
-        <span className="text-brand-gradient">{APP_NAME}</span>
+        <Link
+          href="/"
+          className="text-brand-gradient rounded-[8px] outline-offset-4 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+        >
+          {APP_NAME}
+        </Link>
       </h1>
       <p className="mt-4 max-w-xl text-[17px] leading-7 text-[var(--body)] sm:text-[18px]">
         {APP_DESCRIPTION_LINES[0]}
@@ -39,13 +48,14 @@ export function HomeHero({ articleCount, storageMode }: Props) {
         <br />
         {APP_DESCRIPTION_LINES[1]}
       </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Chip tone="teal">{articleCount}件の要約</Chip>
-        <Chip tone="orange">結論ファースト</Chip>
-        <Chip tone="sky">
-          {storageMode === "neon" ? "自動収集中" : "サンプル表示"}
-        </Chip>
-      </div>
+      {lastUpdatedAt ? (
+        <p className="mt-4 text-[13px] text-[var(--mute)]">
+          最終更新{" "}
+          <time dateTime={lastUpdatedAt}>
+            {formatDate(lastUpdatedAt, "long")}
+          </time>
+        </p>
+      ) : null}
     </header>
   );
 }
