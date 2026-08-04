@@ -1,9 +1,14 @@
 /** ブランド名 */
 export const APP_NAME = "ようやくわかる";
 
-/** ブランド説明（ヒーロー / OGP 共通） */
-export const APP_DESCRIPTION =
-  "長い記事も、要約すればようやくわかる。AIや開発ツールの更新を、結論と使える場面だけで。";
+/** ブランド説明の行（ヒーロー表示用） */
+export const APP_DESCRIPTION_LINES = [
+  "長い記事も、要約すればわかる。",
+  "AIや開発ツールの更新を、結論と使える場面だけで。",
+] as const;
+
+/** ブランド説明（OGP / meta 用の1行テキスト） */
+export const APP_DESCRIPTION = `${APP_DESCRIPTION_LINES[0]}それが『${APP_NAME}』${APP_DESCRIPTION_LINES[1]}`;
 
 /** 一覧1ページあたりの記事数 */
 export const ARTICLES_PER_PAGE = 20;

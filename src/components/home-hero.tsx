@@ -2,7 +2,7 @@ import Image from "next/image";
 import { BrandBadge } from "@/components/ui/brand-badge";
 import { Chip } from "@/components/ui/chip";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
+import { APP_DESCRIPTION_LINES, APP_NAME } from "@/lib/constants";
 
 type Props = {
   articleCount: number;
@@ -29,8 +29,15 @@ export function HomeHero({ articleCount, storageMode }: Props) {
       <h1 className="font-display max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]">
         <span className="text-brand-gradient">{APP_NAME}</span>
       </h1>
-      <p className="mt-4 max-w-xl text-[15px] leading-7 text-[var(--body)]">
-        {APP_DESCRIPTION}
+      <p className="mt-4 max-w-xl text-[17px] leading-7 text-[var(--body)] sm:text-[18px]">
+        {APP_DESCRIPTION_LINES[0]}
+        それが『
+        <span className="text-brand-gradient font-display font-bold tracking-[-0.02em]">
+          {APP_NAME}
+        </span>
+        』
+        <br />
+        {APP_DESCRIPTION_LINES[1]}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
         <Chip tone="teal">{articleCount}件の要約</Chip>
