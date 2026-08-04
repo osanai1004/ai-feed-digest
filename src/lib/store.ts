@@ -178,7 +178,3 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
 
   return article;
 }
-
-export function storageMode(): "neon" | "local-json" {
-  return hasDatabaseUrl() ? "neon" : "local-json";
-}

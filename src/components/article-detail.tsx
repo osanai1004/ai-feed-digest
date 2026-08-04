@@ -1,6 +1,7 @@
 import { ArticleAudiencePanel } from "@/components/article-audience-panel";
 import { SourceBadge, sourceToneVars } from "@/components/ui/source-badge";
 import { formatDate } from "@/lib/formatDate";
+import { safeExternalUrl } from "@/lib/safeUrl";
 import type { Article } from "@/lib/types";
 
 type Props = {
@@ -8,6 +9,9 @@ type Props = {
 };
 
 export function ArticleDetail({ article }: Props) {
+  // 既存データにも不正スキームが混ざり得るため表示側でも防ぐ
+  const externalUrl = safeExternalUrl(article.url);
+
   return (
     <article
       className="ui-detail-shell animate-rise overflow-hidden"
@@ -31,22 +35,24 @@ export function ArticleDetail({ article }: Props) {
 
         <ArticleAudiencePanel summary={article.summary} />
 
-        <div className="mt-8 border-t border-[var(--hairline)] pt-6">
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="cta-button"
-          >
-            元記事で詳細を確認する →
-          </a>
-          <p className="mt-3 text-[13px] leading-6 text-[var(--body)]">
-            まずカード内の要約で把握。詳しく見たいときだけ公式へ。
-          </p>
-          <p className="mt-2 break-all text-[12px] text-[var(--accent)]">
-            {article.url}
-          </p>
-        </div>
+        {externalUrl ? (
+          <div className="mt-8 border-t border-[var(--hairline)] pt-6">
+            <a
+              href={externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cta-button"
+            >
+              元記事で詳細を確認する →
+            </a>
+            <p className="mt-3 text-[13px] leading-6 text-[var(--body)]">
+              まずカード内の要約で把握。詳しく見たいときだけ公式へ。
+            </p>
+            <p className="mt-2 break-all text-[12px] text-[var(--accent)]">
+              {externalUrl}
+            </p>
+          </div>
+        ) : null}
       </div>
     </article>
   );

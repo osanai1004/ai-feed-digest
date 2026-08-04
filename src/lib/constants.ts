@@ -13,6 +13,13 @@ export const APP_DESCRIPTION = `${APP_DESCRIPTION_LINES[0]}それが『${APP_NAM
 /** 一覧1ページあたりの記事数 */
 export const ARTICLES_PER_PAGE = 20;
 
+/** ingest で受け付ける各フィールドの最大文字数（肥大化データの保存を防ぐ） */
+export const INGEST_MAX_LENGTHS = {
+  source: 100,
+  title: 300,
+  url: 2000,
+} as const;
+
 /** 詳細ページの読者タブ */
 export const AUDIENCE_VOICES = [
   { slug: "general", label: "非エンジニア向け" },
