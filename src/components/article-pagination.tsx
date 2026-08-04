@@ -3,6 +3,7 @@ import { buildListHref } from "@/lib/articleFilters";
 
 type Props = {
   q: string;
+  category: string;
   genre: string;
   page: number;
   totalPages: number;
@@ -11,6 +12,7 @@ type Props = {
 
 export function ArticlePagination({
   q,
+  category,
   genre,
   page,
   totalPages,
@@ -20,11 +22,11 @@ export function ArticlePagination({
 
   const prevHref =
     page > 1
-      ? buildListHref({ q, genre, page: page - 1 })
+      ? buildListHref({ q, category, genre, page: page - 1 })
       : null;
   const nextHref =
     page < totalPages
-      ? buildListHref({ q, genre, page: page + 1 })
+      ? buildListHref({ q, category, genre, page: page + 1 })
       : null;
 
   return (
@@ -64,7 +66,12 @@ export function ArticlePagination({
                     </span>
                   ) : (
                     <Link
-                      href={buildListHref({ q, genre, page: pageNum })}
+                      href={buildListHref({
+                        q,
+                        category,
+                        genre,
+                        page: pageNum,
+                      })}
                       className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[var(--hairline)] bg-[var(--card)] px-2 text-[12px] font-bold text-[var(--ink-soft)] transition hover:-translate-y-0.5"
                     >
                       {pageNum}

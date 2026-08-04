@@ -50,9 +50,10 @@
 | Laravel Framework | 公式 | GitHub Releases |
 | Vercel | 公式 | Vercel News |
 | Next.js | 公式 | Next.js Blog |
-| Hugging Face | 公式 | Hugging Face Blog |
 | GitHub Changelog | 公式 | GitHub Changelog |
 | Cloudflare | 公式 | Cloudflare Blog |
+| Supabase | 公式 | Supabase Blog |
+| AWS | 公式 | AWS Machine Learning Blog（AI寄り） |
 
 - 1サイトあたり最大3件/実行
 - 失敗したサイトはスキップして他は継続

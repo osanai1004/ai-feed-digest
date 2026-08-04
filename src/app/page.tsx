@@ -4,6 +4,7 @@ import { ArticlePagination } from "@/components/article-pagination";
 import { EmptyArticles } from "@/components/empty-articles";
 import { HomeHero } from "@/components/home-hero";
 import {
+  availableCategories,
   availableGenres,
   filterArticles,
   paginateArticles,
@@ -21,7 +22,8 @@ export default async function HomePage({ searchParams }: Props) {
   const articles = await listArticles();
   const mode = storageMode();
   const query = parseArticleListQuery(await searchParams);
-  const genres = availableGenres(articles);
+  const categories = availableCategories(articles);
+  const genres = availableGenres(articles, query.category);
   const filtered = filterArticles(articles, query);
   const pageResult = paginateArticles(filtered, query.page);
 
@@ -31,7 +33,9 @@ export default async function HomePage({ searchParams }: Props) {
 
       <ArticleListControls
         q={query.q}
+        category={query.category}
         genre={query.genre}
+        categories={categories}
         genres={genres}
         resultCount={filtered.length}
         totalCount={articles.length}
@@ -49,6 +53,7 @@ export default async function HomePage({ searchParams }: Props) {
 
       <ArticlePagination
         q={query.q}
+        category={query.category}
         genre={query.genre}
         page={pageResult.page}
         totalPages={pageResult.totalPages}

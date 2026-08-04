@@ -72,16 +72,21 @@ var FEEDS = [
     url: "https://nextjs.org/feed.xml",
   },
   {
-    source: "Hugging Face",
-    url: "https://huggingface.co/blog/feed.xml",
-  },
-  {
     source: "GitHub Changelog",
     url: "https://github.blog/changelog/feed/",
   },
   {
     source: "Cloudflare",
     url: "https://blog.cloudflare.com/rss/",
+  },
+  {
+    source: "Supabase",
+    url: "https://supabase.com/rss.xml",
+  },
+  {
+    source: "AWS",
+    // AI / ML 更新中心（Bedrock / SageMaker 等）
+    url: "https://aws.amazon.com/blogs/machine-learning/feed/",
   },
 ];
 

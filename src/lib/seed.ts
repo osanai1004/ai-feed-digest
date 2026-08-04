@@ -291,20 +291,6 @@ export const SEED_ARTICLES: Article[] = [
     ],
   }),
   seedArticle({
-    id: "seed-huggingface",
-    source: "Hugging Face",
-    title: "（サンプル）Hugging Face Blog のモデル公開を追う",
-    url: "https://huggingface.co/blog",
-    publishedAt: "2026-07-18T00:00:00.000Z",
-    conclusion:
-      "Hugging Face の更新を短く要約するサンプルです。\nモデル公開とツール更新を先に書きます。\n実験候補の選定に使います。",
-    situations: [
-      "新しいオープンモデルを試すとき",
-      "社内検証用の候補をリストするとき",
-      "研究・実装のネタを集めるとき",
-    ],
-  }),
-  seedArticle({
     id: "seed-github",
     source: "GitHub Changelog",
     title: "（サンプル）GitHub Changelog から開発フロー影響を拾う",

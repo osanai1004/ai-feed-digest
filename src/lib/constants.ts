@@ -22,60 +22,84 @@ export const AUDIENCE_VOICE_STORAGE_KEY = "yoyaku-audience-voice";
 /** 初期表示は非エンジニア向け */
 export const DEFAULT_AUDIENCE_VOICE: AudienceVoiceSlug = "general";
 
+/** TOP の大分類（AI / 開発ツール） */
+export const ARTICLE_CATEGORIES = [
+  { slug: "ai", label: "AI" },
+  { slug: "devtools", label: "開発ツール" },
+] as const;
+
+export type CategorySlug = (typeof ARTICLE_CATEGORIES)[number]["slug"];
+
 /**
- * ジャンル（大枠タグ）定義。
+ * ジャンル（ベンダー近似タグ）定義。
  * source 名に含まれる語でグループ化する。
  */
 export const ARTICLE_GENRES = [
   {
     slug: "openai",
     label: "OpenAI",
+    category: "ai",
     keywords: ["openai", "chatgpt"],
   },
   {
     slug: "claude",
     label: "Claude",
+    category: "ai",
     keywords: ["claude", "anthropic"],
   },
   {
     slug: "gemini",
     label: "Gemini",
+    category: "ai",
     keywords: ["gemini", "google ai", "deepmind", "google deepmind"],
   },
   {
     slug: "cursor",
     label: "Cursor",
+    category: "ai",
     keywords: ["cursor"],
+  },
+  {
+    slug: "aws",
+    label: "AWS",
+    category: "ai",
+    keywords: ["aws"],
   },
   {
     slug: "laravel",
     label: "Laravel",
+    category: "devtools",
     keywords: ["laravel"],
   },
   {
     slug: "vercel",
     label: "Vercel",
+    category: "devtools",
     keywords: ["vercel"],
   },
   {
     slug: "nextjs",
     label: "Next.js",
+    category: "devtools",
     keywords: ["next.js", "nextjs"],
-  },
-  {
-    slug: "huggingface",
-    label: "Hugging Face",
-    keywords: ["hugging face", "huggingface"],
   },
   {
     slug: "github",
     label: "GitHub",
+    category: "devtools",
     keywords: ["github"],
   },
   {
     slug: "cloudflare",
     label: "Cloudflare",
+    category: "devtools",
     keywords: ["cloudflare"],
+  },
+  {
+    slug: "supabase",
+    label: "Supabase",
+    category: "devtools",
+    keywords: ["supabase"],
   },
 ] as const;
 

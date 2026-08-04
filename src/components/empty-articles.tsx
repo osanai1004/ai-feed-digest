@@ -8,7 +8,7 @@ export function EmptyArticles() {
         該当する記事がありません
       </p>
       <p className="mt-2 text-[14px] leading-6 text-[var(--body)]">
-        検索語やジャンルを変えて、もう一度試してください。
+        検索語や種別・ソースを変えて、もう一度試してください。
       </p>
       <PillLink href="/" className="mt-5">
         条件をクリア

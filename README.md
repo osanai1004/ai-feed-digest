@@ -80,7 +80,7 @@ npx vercel --prod --yes
 5. 既存記事を2ボイス化したいときは `backfillDualVoiceArticles` を実行（必要なら複数回）
 6. 必要なら `createDailyTrigger` を実行
 
-監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js / Hugging Face / GitHub Changelog / Cloudflare  
+監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js / GitHub Changelog / Cloudflare / Supabase / AWS（Machine Learning）  
 詳細は `gas/README.md`。Slack 通知は Webhook 未設定ならスキップ（後から有効化可）。
 
 ## API

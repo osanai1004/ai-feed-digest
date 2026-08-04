@@ -1,12 +1,15 @@
 import {
+  ARTICLE_CATEGORIES,
   ARTICLE_GENRES,
   ARTICLES_PER_PAGE,
+  type CategorySlug,
   type GenreSlug,
 } from "./constants";
 import type { Article } from "./types";
 
 export type ArticleListQuery = {
   q: string;
+  category: CategorySlug | "";
   genre: GenreSlug | "";
   page: number;
 };
@@ -22,13 +25,22 @@ export function parseArticleListQuery(searchParams: {
   [key: string]: string | string[] | undefined;
 }): ArticleListQuery {
   const q = (firstParam(searchParams.q) ?? "").trim();
+  const categoryRaw = (firstParam(searchParams.category) ?? "")
+    .trim()
+    .toLowerCase();
+  const category =
+    ARTICLE_CATEGORIES.find((c) => c.slug === categoryRaw)?.slug ?? "";
   const genreRaw = (firstParam(searchParams.genre) ?? "").trim().toLowerCase();
+  const genreMatch = ARTICLE_GENRES.find((g) => g.slug === genreRaw);
+  // 大分類と矛盾するジャンルは無視する
   const genre =
-    ARTICLE_GENRES.find((g) => g.slug === genreRaw)?.slug ?? "";
+    genreMatch && (!category || genreMatch.category === category)
+      ? genreMatch.slug
+      : "";
   const pageRaw = Number.parseInt(firstParam(searchParams.page) ?? "1", 10);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
 
-  return { q, genre, page };
+  return { q, category, genre, page };
 }
 
 function articleSearchText(article: Article): string {
@@ -57,13 +69,28 @@ export function articleMatchesGenre(
   return genre.keywords.some((keyword) => haystack.includes(keyword));
 }
 
+export function articleMatchesCategory(
+  article: Article,
+  categorySlug: CategorySlug,
+): boolean {
+  return ARTICLE_GENRES.filter((genre) => genre.category === categorySlug).some(
+    (genre) => articleMatchesGenre(article, genre.slug),
+  );
+}
+
 export function filterArticles(
   articles: Article[],
-  query: Pick<ArticleListQuery, "q" | "genre">,
+  query: Pick<ArticleListQuery, "q" | "category" | "genre">,
 ): Article[] {
   const needle = query.q.toLowerCase();
 
   return articles.filter((article) => {
+    if (
+      query.category &&
+      !articleMatchesCategory(article, query.category)
+    ) {
+      return false;
+    }
     if (query.genre && !articleMatchesGenre(article, query.genre)) {
       return false;
     }
@@ -97,21 +124,34 @@ export function paginateArticles<T>(
   };
 }
 
-/** 記事が1件以上あるジャンルだけ返す */
-export function availableGenres(articles: Article[]) {
-  return ARTICLE_GENRES.filter((genre) =>
-    articles.some((article) => articleMatchesGenre(article, genre.slug)),
+/** 記事が1件以上あるジャンルだけ返す（大分類指定時はその系統のみ） */
+export function availableGenres(
+  articles: Article[],
+  category: CategorySlug | "" = "",
+) {
+  return ARTICLE_GENRES.filter((genre) => {
+    if (category && genre.category !== category) return false;
+    return articles.some((article) => articleMatchesGenre(article, genre.slug));
+  });
+}
+
+/** 記事が1件以上ある大分類だけ返す */
+export function availableCategories(articles: Article[]) {
+  return ARTICLE_CATEGORIES.filter((category) =>
+    articles.some((article) => articleMatchesCategory(article, category.slug)),
   );
 }
 
 export function buildListHref(params: {
   q?: string;
+  category?: string;
   genre?: string;
   page?: number;
 }): string {
   const sp = new URLSearchParams();
   const q = params.q?.trim();
   if (q) sp.set("q", q);
+  if (params.category) sp.set("category", params.category);
   if (params.genre) sp.set("genre", params.genre);
   if (params.page && params.page > 1) sp.set("page", String(params.page));
   const qs = sp.toString();
