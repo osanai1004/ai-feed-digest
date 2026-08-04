@@ -6,9 +6,10 @@ ChatGPT・Claude・Gemini などの公式アップデートを RSS で集め、�
 
 **https://ai-feed-digest-ten.vercel.app**
 
-- Neon（Postgres）に接続済みの正式な公開URLです
-- 同じ GitHub リポジトリから作られた `ai-feed-digest-q6nz` / `vx3z` などの URL は重複プロジェクトなので使わないでください
-- 新規に「Import Project」し直すと、また別名の URL が増えます。再デプロイは既存プロジェクトの Dashboard から行ってください
+- Vercel の**プロジェクト名**は `ai-feed-digest`（`ten` というプロジェクトはありません）
+- 公開ドメインだけが `ai-feed-digest-ten.vercel.app` です（Neon 接続済み）
+- `ai-feed-digest-q6nz` / `vx3z` / `hai4` / `d1jy` / `xm8t` は重複プロジェクトなので使わない・削除してください
+- 新規に「Import Project」し直すと、また別名プロジェクトが増えます
 
 ## UI
 
@@ -53,7 +54,8 @@ npm run dev
 
 再デプロイする場合:
 
-1. [Vercel Dashboard](https://vercel.com/dashboard) で `ai-feed-digest-ten` を開く
+1. [Vercel Dashboard](https://vercel.com/dashboard) でプロジェクト **`ai-feed-digest`** を開く  
+   （ドメイン表示は `ai-feed-digest-ten.vercel.app`）
 2. Deployments → 最新を Redeploy、または `main` へ push
 
 初回セットアップ時のみ（新規で作り直すとき）:
@@ -67,15 +69,21 @@ npm run dev
 CLI 例（既存プロジェクトに link する）:
 
 ```bash
-npx vercel link --yes --project ai-feed-digest-ten
+npx vercel link --yes --project ai-feed-digest
 npx vercel --prod --yes
 ```
 
 ### 重複プロジェクトの削除（1URLに統一）
 
-同じリポジトリに複数プロジェクトが繋がっている場合、Vercel Dashboard で次を削除してください（`ai-feed-digest-ten` 以外）:
+**残す:** プロジェクト `ai-feed-digest`（URL: `ai-feed-digest-ten.vercel.app`）
 
-- `ai-feed-digest` / `ai-feed-digest-q6nz` / `ai-feed-digest-vx3z` / `ai-feed-digest-d1jy` / `ai-feed-digest-hai4` / `ai-feed-digest-xm8t`
+**削除する:** 次の重複プロジェクト
+
+- `ai-feed-digest-q6nz`
+- `ai-feed-digest-vx3z`
+- `ai-feed-digest-d1jy`
+- `ai-feed-digest-hai4`
+- `ai-feed-digest-xm8t`
 
 手順: 各プロジェクト → Settings → General → Delete Project  
 （または Settings → Git → Disconnect だけでも、以後の自動デプロイは止まります）
