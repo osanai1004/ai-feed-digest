@@ -1,4 +1,5 @@
-import type { Article } from "./types";
+import { dualFromLegacy, normalizeArticleSummary } from "./summary";
+import type { Article, ArticleSummary, ArticleTerm } from "./types";
 
 type SeedInput = {
   id: string;
@@ -8,19 +9,23 @@ type SeedInput = {
   publishedAt: string;
   conclusion: string;
   situations: [string, string, string];
+  /** 省略時は両ボイスに同じ内容を展開 */
+  summary?: ArticleSummary;
+  terms?: ArticleTerm[];
 };
 
 function seedArticle(input: SeedInput): Article {
+  const summary =
+    input.summary ??
+    dualFromLegacy(input.conclusion, input.situations, input.terms);
+
   return {
     id: input.id,
     source: input.source,
     title: input.title,
     url: input.url,
     publishedAt: input.publishedAt,
-    summary: {
-      conclusion: input.conclusion,
-      situations: [...input.situations],
-    },
+    summary: normalizeArticleSummary(summary),
     createdAt: input.publishedAt,
   };
 }
@@ -33,13 +38,48 @@ export const SEED_ARTICLES: Article[] = [
     title: "（サンプル）OpenAI の製品アップデートを追うときの見方",
     url: "https://openai.com/news/",
     publishedAt: "2026-08-01T00:00:00.000Z",
-    conclusion:
-      "これはデモ用の要約です。本番では GAS が RSS 本文を Gemini で整形した内容が入ります。\n結論は「何が変わったか」を先に書きます。\n詳細確認は元URLで行います。",
-    situations: [
-      "朝の情報キャッチアップで、まず結論だけ眺めるとき",
-      "業務プロンプトや社内説明に使える変化かを判断するとき",
-      "チーム共有用に「使える場面」付きでメモするとき",
-    ],
+    conclusion: "",
+    situations: ["", "", ""],
+    summary: {
+      general: {
+        conclusion:
+          "OpenAI の新しい発表を、まず「何が変わったか」だけで掴めます。\n難しい用語は下の解説を見れば大丈夫です。\n自分の仕事に関係ありそうなら、使える場面をチェックしてください。",
+        situations: [
+          "朝、AIツールのニュースを短時間で確認したいとき",
+          "会議で『最近の変化』を1分で共有したいとき",
+          "社内で使うか・様子見かを決めるとき",
+        ],
+        terms: [
+          {
+            term: "API",
+            plain: "アプリ同士が情報をやりとりするための接続口",
+          },
+          {
+            term: "アップデート",
+            plain: "機能やルールが新しくなったこと",
+          },
+        ],
+      },
+      engineer: {
+        conclusion:
+          "OpenAI 製品更新の差分を、結論3行で先に把握するサンプルです。\nUI変更と API / 制限変更を分けて読む前提です。\n詳細確認は公式URLで行い、影響範囲だけチーム共有します。",
+        situations: [
+          "プロンプトや利用制限の変更を運用に反映するか決めるとき",
+          "社内ツール連携の破壊的変更有無を確認するとき",
+          "週次でモデル・API差分を棚卸しするとき",
+        ],
+        terms: [
+          {
+            term: "API",
+            plain: "外部システムから機能を呼ぶためのインターフェース",
+          },
+          {
+            term: "レート制限",
+            plain: "一定時間あたりのリクエスト上限",
+          },
+        ],
+      },
+    },
   }),
   seedArticle({
     id: "seed-anthropic",
@@ -53,6 +93,12 @@ export const SEED_ARTICLES: Article[] = [
       "Claude の制限変更をチーム運用に反映するか検討するとき",
       "新しい使い方を社内ナレッジに短く転記するとき",
       "週次で AI ツール動向をまとめるとき",
+    ],
+    terms: [
+      {
+        term: "Claude",
+        plain: "Anthropic 社が出しているAIアシスタント",
+      },
     ],
   }),
   seedArticle({
@@ -75,13 +121,48 @@ export const SEED_ARTICLES: Article[] = [
     title: "（サンプル）Claude Code の changelog を開発チームで拾う",
     url: "https://code.claude.com/docs/en/changelog",
     publishedAt: "2026-07-28T00:00:00.000Z",
-    conclusion:
-      "開発者向け更新を短く掴むサンプルです。\nCLI やエージェント挙動の変化を先に書きます。\n詳細は changelog を開いて確認します。",
-    situations: [
-      "ローカル開発ツールの更新可否を決めるとき",
-      "エージェント実行手順をチームに共有するとき",
-      "週次の開発ツール棚卸しをするとき",
-    ],
+    conclusion: "",
+    situations: ["", "", ""],
+    summary: {
+      general: {
+        conclusion:
+          "開発向けツールの更新ですが、要点だけ言えば『AIにコード作業を任せる機能が変わった』です。\n自分でコードを書かない人は、チームへの影響有無だけ見れば十分です。\n詳細はエンジニア向けタブか元記事へ。",
+        situations: [
+          "開発チームから『ツールが変わった』と聞いたとき",
+          "AIコーディング導入の進捗を確認するとき",
+          "非エンジニアが影響範囲だけ先に知りたいとき",
+        ],
+        terms: [
+          {
+            term: "changelog",
+            plain: "何が新しくなったかを時系列で書いた更新履歴",
+          },
+          {
+            term: "エージェント",
+            plain: "指示に従って複数の作業を進めてくれるAIの動き方",
+          },
+        ],
+      },
+      engineer: {
+        conclusion:
+          "Claude Code の changelog 差分を短く掴むサンプルです。\nCLI やエージェント挙動の変化を先に書きます。\n詳細は changelog を開いて確認します。",
+        situations: [
+          "ローカル開発ツールの更新可否を決めるとき",
+          "エージェント実行手順をチームに共有するとき",
+          "週次の開発ツール棚卸しをするとき",
+        ],
+        terms: [
+          {
+            term: "CLI",
+            plain: "ターミナルから操作するコマンドライン界面",
+          },
+          {
+            term: "エージェント",
+            plain: "ツール呼び出しを含む自律的な実行ループ",
+          },
+        ],
+      },
+    },
   }),
   seedArticle({
     id: "seed-gemini",
@@ -327,12 +408,43 @@ export const SEED_ARTICLES: Article[] = [
     title: "（サンプル）Next.js のキャッシュ戦略更新を実務に落とす",
     url: "https://nextjs.org/blog/sample-cache",
     publishedAt: "2026-07-10T00:00:00.000Z",
-    conclusion:
-      "キャッシュ関連の更新を結論付きで読むサンプルです。\n挙動変更と推奨設定を分けて書きます。\n障害調査の手がかりにも使います。",
-    situations: [
-      "表示遅延や古データを調査するとき",
-      "キャッシュ設定を見直すとき",
-      "リリース前に破壊的変更を確認するとき",
-    ],
+    conclusion: "",
+    situations: ["", "", ""],
+    summary: {
+      general: {
+        conclusion:
+          "『前に見た情報が古いまま残る／すぐ最新になる』仕組みの話です。\nサイトや社内ツールの表示がおかしいとき、原因候補になります。\n設定の細部はエンジニア向けタブで確認できます。",
+        situations: [
+          "『画面の情報が古い』と問い合わせを受けたとき",
+          "公開後の見え方を関係者に説明するとき",
+          "更新が反映されるまでの待ち時間を知りたいとき",
+        ],
+        terms: [
+          {
+            term: "キャッシュ",
+            plain: "一度取り出した情報を一時保存して、次回を速くする仕組み",
+          },
+        ],
+      },
+      engineer: {
+        conclusion:
+          "キャッシュ関連の更新を結論付きで読むサンプルです。\n挙動変更と推奨設定を分けて書きます。\n障害調査の手がかりにも使います。",
+        situations: [
+          "表示遅延や古データを調査するとき",
+          "キャッシュ設定を見直すとき",
+          "リリース前に破壊的変更を確認するとき",
+        ],
+        terms: [
+          {
+            term: "キャッシュ",
+            plain: "レスポンスやデータを再利用するための保存層",
+          },
+          {
+            term: "再検証",
+            plain: "保存済みデータを最新状態へ更新する処理",
+          },
+        ],
+      },
+    },
   }),
 ];

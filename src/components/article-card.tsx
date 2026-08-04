@@ -33,7 +33,7 @@ export function ArticleCard({ article, index }: Props) {
         {article.title}
       </h2>
       <p className="mt-3 line-clamp-2 pl-2 text-[14px] leading-6 text-[var(--body)]">
-        {toSingleLine(article.summary.conclusion)}
+        {toSingleLine(article.summary.general.conclusion)}
       </p>
       <div className="mt-4 flex items-center justify-between pl-2 text-[12px] font-bold text-[var(--accent)]">
         <span>要約を読む</span>

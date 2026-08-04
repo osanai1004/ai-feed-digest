@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertIngestAuthorized } from "@/lib/auth";
 import { upsertArticle } from "@/lib/store";
+import { isDualSummary, isLegacySummary } from "@/lib/summary";
 import type { IngestPayload } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -12,9 +13,16 @@ function isValidPayload(body: unknown): body is IngestPayload {
   if (typeof b.title !== "string" || !b.title.trim()) return false;
   if (typeof b.url !== "string" || !b.url.trim()) return false;
   if (!b.summary || typeof b.summary !== "object") return false;
-  const s = b.summary as Record<string, unknown>;
-  if (typeof s.conclusion !== "string") return false;
-  if (!Array.isArray(s.situations)) return false;
+
+  if (isLegacySummary(b.summary)) return true;
+  if (!isDualSummary(b.summary)) return false;
+
+  const general = b.summary.general as Record<string, unknown>;
+  const engineer = b.summary.engineer as Record<string, unknown>;
+  if (typeof general.conclusion !== "string") return false;
+  if (!Array.isArray(general.situations)) return false;
+  if (typeof engineer.conclusion !== "string") return false;
+  if (!Array.isArray(engineer.situations)) return false;
   return true;
 }
 
@@ -26,7 +34,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Invalid payload. Required: source, title, url, summary.conclusion, summary.situations[]",
+            "Invalid payload. Required: source, title, url, summary.general|summary.engineer (or legacy summary.conclusion + situations[])",
         },
         { status: 400 },
       );

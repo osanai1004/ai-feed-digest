@@ -1,6 +1,6 @@
-# AI更新要約
+# ようやくわかる
 
-ChatGPT・Claude・Gemini などの公式アップデートを RSS で集め、日本語の「結論＋使える場面」に要約して読む個人用リーダーです。
+「要約」したら「ようやくわかる」。ChatGPT・Claude・Gemini などの公式アプデを RSS で集め、日本語の「結論＋使える場面」だけで読む AI 更新リーダーです。
 
 ## UI
 
@@ -19,8 +19,13 @@ ChatGPT・Claude・Gemini などの公式アップデートを RSS で集め、�
 
 ## 要約フォーマット
 
+詳細では **非エンジニア向け / エンジニア向け** の2ボイスを切り替えます（事実は同じ・言い方だけ変える）。
+
+各ボイス:
+
 1. **結論**（3行程度）
-2. **使えるシチュエーション**（3点）
+2. **用語ひとこと**（必要な語だけ、一口解説）
+3. **使えるシチュエーション**（3点）
 
 ## 1. Gemini API キー（既存キーでOK）
 
@@ -93,11 +98,21 @@ Content-Type: application/json
   "url": "https://example.com/post",
   "publishedAt": "2026-08-02T00:00:00.000Z",
   "summary": {
-    "conclusion": "結論1行目\\n2行目\\n3行目",
-    "situations": ["場面1", "場面2", "場面3"]
+    "general": {
+      "conclusion": "非エンジニア向け結論1行目\\n2行目\\n3行目",
+      "situations": ["場面1", "場面2", "場面3"],
+      "terms": [{ "term": "API", "plain": "アプリ同士の接続口" }]
+    },
+    "engineer": {
+      "conclusion": "エンジニア向け結論1行目\\n2行目\\n3行目",
+      "situations": ["場面1", "場面2", "場面3"],
+      "terms": [{ "term": "API", "plain": "外部から機能を呼ぶインターフェース" }]
+    }
   }
 }
 ```
+
+旧形式（`summary.conclusion` + `summary.situations`）も受け付け、両ボイスへ展開します。
 
 ### `GET /api/articles`
 

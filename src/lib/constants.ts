@@ -1,6 +1,20 @@
 /** 一覧1ページあたりの記事数 */
 export const ARTICLES_PER_PAGE = 20;
 
+/** 詳細ページの読者タブ */
+export const AUDIENCE_VOICES = [
+  { slug: "general", label: "非エンジニア向け" },
+  { slug: "engineer", label: "エンジニア向け" },
+] as const;
+
+export type AudienceVoiceSlug = (typeof AUDIENCE_VOICES)[number]["slug"];
+
+/** 読者タブの選択を覚える localStorage キー */
+export const AUDIENCE_VOICE_STORAGE_KEY = "yoyaku-audience-voice";
+
+/** 初期表示は非エンジニア向け */
+export const DEFAULT_AUDIENCE_VOICE: AudienceVoiceSlug = "general";
+
 /**
  * ジャンル（大枠タグ）定義。
  * source 名に含まれる語でグループ化する。

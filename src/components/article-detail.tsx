@@ -1,3 +1,4 @@
+import { ArticleAudiencePanel } from "@/components/article-audience-panel";
 import { SourceBadge, sourceToneVars } from "@/components/ui/source-badge";
 import { formatDate } from "@/lib/formatDate";
 import type { Article } from "@/lib/types";
@@ -28,35 +29,7 @@ export function ArticleDetail({ article }: Props) {
           {article.title}
         </h1>
 
-        <section className="ui-panel mt-8 rounded-3xl p-5 sm:p-6">
-          <h2 className="mb-3 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-teal-fg)] uppercase">
-            結論
-          </h2>
-          <div className="whitespace-pre-line text-[17px] leading-8 text-[var(--ink-soft)]">
-            {article.summary.conclusion}
-          </div>
-        </section>
-
-        <section className="mt-6">
-          <h2 className="mb-4 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-orange-fg)] uppercase">
-            使えるシチュエーション
-          </h2>
-          <ol className="grid gap-3">
-            {article.summary.situations.map((item, index) => (
-              <li
-                key={`${index}-${item}`}
-                className="flex gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--canvas)] p-4"
-              >
-                <span className="ui-source-bar flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-extrabold text-white">
-                  {index + 1}
-                </span>
-                <span className="pt-1 text-[15px] leading-7 text-[var(--ink-soft)]">
-                  {item}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <ArticleAudiencePanel summary={article.summary} />
 
         <div className="mt-8 border-t border-[var(--hairline)] pt-6">
           <a

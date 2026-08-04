@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { neon } from "@neondatabase/serverless";
 import { SEED_ARTICLES } from "./seed";
-import { normalizeMultilineText } from "./text";
+import { normalizeArticleSummary } from "./summary";
 import type { Article, IngestPayload } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -32,18 +32,17 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS summary_json JSONB
+  `;
 }
 
 function normalizeArticle(article: Article): Article {
   return {
     ...article,
     title: article.title.trim(),
-    summary: {
-      conclusion: normalizeMultilineText(article.summary.conclusion),
-      situations: article.summary.situations.map((s) =>
-        normalizeMultilineText(String(s)),
-      ),
-    },
+    summary: normalizeArticleSummary(article.summary),
   };
 }
 
@@ -76,27 +75,17 @@ function makeId(source: string, url: string) {
   return `a_${Math.abs(hash)}`;
 }
 
-function normalizeSummary(summary: IngestPayload["summary"]) {
-  const situations = (summary.situations ?? [])
-    .filter(Boolean)
-    .map((s) => normalizeMultilineText(String(s)).trim())
-    .slice(0, 3);
-  while (situations.length < 3) {
-    situations.push("（シチュエーション未入力）");
-  }
-  return {
-    conclusion:
-      normalizeMultilineText(summary.conclusion ?? "").trim() ||
-      "（結論未入力）",
-    situations,
-  };
-}
-
 function mapArticleRow(row: Record<string, unknown>): Article {
-  const situationsRaw = row.situations;
-  const situations = Array.isArray(situationsRaw)
-    ? situationsRaw.map(String)
-    : JSON.parse(String(situationsRaw));
+  const summaryJson = row.summary_json;
+  const summary =
+    summaryJson && typeof summaryJson === "object"
+      ? normalizeArticleSummary(summaryJson)
+      : normalizeArticleSummary({
+          conclusion: String(row.conclusion ?? ""),
+          situations: Array.isArray(row.situations)
+            ? row.situations.map(String)
+            : JSON.parse(String(row.situations ?? "[]")),
+        });
 
   return {
     id: String(row.id),
@@ -106,12 +95,7 @@ function mapArticleRow(row: Record<string, unknown>): Article {
     publishedAt: new Date(
       String(row.published_at ?? row.created_at),
     ).toISOString(),
-    summary: {
-      conclusion: normalizeMultilineText(String(row.conclusion)),
-      situations: situations.map((s: string) =>
-        normalizeMultilineText(String(s)),
-      ),
-    },
+    summary,
     createdAt: new Date(String(row.created_at)).toISOString(),
   };
 }
@@ -126,7 +110,8 @@ export async function listArticles(): Promise<Article[]> {
   await ensureSchema();
   const sql = sqlClient();
   const rows = await sql`
-    SELECT id, source, title, url, published_at, conclusion, situations, created_at
+    SELECT id, source, title, url, published_at, conclusion, situations,
+           summary_json, created_at
     FROM articles
     ORDER BY COALESCE(published_at, created_at) DESC
   `;
@@ -142,7 +127,7 @@ export async function getArticle(id: string): Promise<Article | null> {
 }
 
 export async function upsertArticle(payload: IngestPayload): Promise<Article> {
-  const summary = normalizeSummary(payload.summary);
+  const summary = normalizeArticleSummary(payload.summary);
   const now = new Date().toISOString();
   const article: Article = {
     id: makeId(payload.source, payload.url),
@@ -165,16 +150,21 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
 
   await ensureSchema();
   const sql = sqlClient();
+  // conclusion / situations は一覧互換のため general を冗長保存
   await sql`
-    INSERT INTO articles (id, source, title, url, published_at, conclusion, situations, created_at)
+    INSERT INTO articles (
+      id, source, title, url, published_at,
+      conclusion, situations, summary_json, created_at
+    )
     VALUES (
       ${article.id},
       ${article.source},
       ${article.title},
       ${article.url},
       ${article.publishedAt},
-      ${article.summary.conclusion},
-      ${JSON.stringify(article.summary.situations)}::jsonb,
+      ${article.summary.general.conclusion},
+      ${JSON.stringify(article.summary.general.situations)}::jsonb,
+      ${JSON.stringify(article.summary)}::jsonb,
       ${article.createdAt}
     )
     ON CONFLICT (url) DO UPDATE SET
@@ -182,7 +172,8 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
       title = EXCLUDED.title,
       published_at = EXCLUDED.published_at,
       conclusion = EXCLUDED.conclusion,
-      situations = EXCLUDED.situations
+      situations = EXCLUDED.situations,
+      summary_json = EXCLUDED.summary_json
   `;
 
   return article;

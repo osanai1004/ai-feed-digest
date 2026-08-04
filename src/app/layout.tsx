@@ -16,12 +16,12 @@ const ui = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "AI更新要約",
+  title: "ようやくわかる",
   description:
-    "ChatGPT・Claude・Geminiなどの公式アップデートを日本語要約する個人用リーダー。結論と使える場面つき。",
+    "「要約」したら「ようやくわかる」。ChatGPT・Claude・Geminiなどの公式アプデを、結論と使える場面だけで読むAI更新リーダー。",
   appleWebApp: {
     capable: true,
-    title: "AI更新要約",
+    title: "ようやくわかる",
     statusBarStyle: "default",
   },
 };

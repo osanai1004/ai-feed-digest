@@ -131,8 +131,8 @@ function runOnce() {
           url: item.link,
           publishedAt: item.pubDate || new Date().toISOString(),
           summary: {
-            conclusion: summary.conclusion,
-            situations: summary.situations,
+            general: summary.general,
+            engineer: summary.engineer,
           },
         };
 
@@ -185,7 +185,13 @@ function notifySlack_(webhookUrl, appBaseUrl, articles) {
   }
 
   var lines = articles.map(function (a, i) {
-    var conclusion = String(a.summary.conclusion || "")
+    var conclusionSource =
+      (a.summary &&
+        a.summary.general &&
+        a.summary.general.conclusion) ||
+      (a.summary && a.summary.conclusion) ||
+      "";
+    var conclusion = String(conclusionSource)
       .replace(/\\n/g, " ")
       .replace(/\n/g, " ")
       .slice(0, 120);
@@ -205,7 +211,7 @@ function notifySlack_(webhookUrl, appBaseUrl, articles) {
   });
 
   var text =
-    ":sparkles: *AI更新要約* に新着 " +
+    ":sparkles: *ようやくわかる* に新着 " +
     articles.length +
     " 件\n\n" +
     lines.join("\n\n");
@@ -238,19 +244,30 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     encodeURIComponent(apiKey);
 
   var prompt =
-    "あなたはAIプロダクト更新を実務知識に翻訳する編集者です。\n" +
-    "次の記事を日本語で要約してください。\n" +
+    "あなたはAIプロダクト更新を、読者別に翻訳する編集者です。\n" +
+    "同じ事実を『非エンジニア向け』と『エンジニア向け』の2ボイスで日本語要約してください。\n" +
     "必ず次のJSONだけを返してください（前後に説明文やコードフェンス禁止）。\n" +
     "{\n" +
-    '  "title": "自然な日本語の見出し（簡潔・ニュース見出し調。英単語の直訳調は避ける）",\n' +
-    '  "conclusion": "結論を3行程度。各行は実際の改行で区切る",\n' +
-    '  "situations": ["使えるシチュエーション1", "2", "3"]\n' +
+    '  "title": "共通の日本語見出し（簡潔・ニュース見出し調）",\n' +
+    '  "general": {\n' +
+    '    "conclusion": "非エンジニア向け結論。3行程度。各行は実際の改行で区切る",\n' +
+    '    "situations": ["使える場面1", "2", "3"],\n' +
+    '    "terms": [{"term":"用語","plain":"一口解説"}]\n' +
+    "  },\n" +
+    '  "engineer": {\n' +
+    '    "conclusion": "エンジニア向け結論。3行程度。各行は実際の改行で区切る",\n' +
+    '    "situations": ["使える場面1", "2", "3"],\n' +
+    '    "terms": [{"term":"用語","plain":"正確で短い定義"}]\n' +
+    "  }\n" +
     "}\n\n" +
     "要件:\n" +
     "- title は必ず日本語。固有名詞（Next.js / Claude 等）だけ英語可\n" +
-    "- 結論ファーストで、何が言えるかを先に書く\n" +
+    "- 事実関係は両ボイスで一致させる。言い方だけ変える\n" +
+    "- general: 専門用語を避けるか直後に噛み砕く。企画・営業・事務でも分かる言い方\n" +
+    "- engineer: 正確な用語OK。実装・運用・互換性への影響を明確に\n" +
     "- conclusion 内に文字としての \\\\n を書かない。普通の改行を使う\n" +
-    "- situations は現実の業務で使える場面を3点\n" +
+    "- situations は各ボイス3点。読者の現実業務に寄せる\n" +
+    "- terms は記事理解に必要な語だけ0〜5件。plain は1文で簡潔に\n" +
     "- やや詳しめ。ただし冗長にしない\n" +
     "- 不明点は推測で埋めない\n\n" +
     "source: " +
@@ -294,17 +311,13 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
       .trim();
 
     var parsed = JSON.parse(content);
-    if (!parsed.conclusion || !parsed.situations) {
+    if (!parsed.general || !parsed.engineer) {
       throw new Error("Gemini response missing fields: " + content);
     }
     return {
       title: normalizePlainText_(parsed.title || title),
-      conclusion: normalizeMultilineText_(parsed.conclusion),
-      situations: parsed.situations
-        .map(function (s) {
-          return normalizePlainText_(s);
-        })
-        .slice(0, 3),
+      general: normalizeAudienceSummary_(parsed.general),
+      engineer: normalizeAudienceSummary_(parsed.engineer),
     };
   }
 
@@ -325,6 +338,37 @@ function normalizePlainText_(value) {
   return normalizeMultilineText_(value)
     .replace(/\s*\n+\s*/g, " ")
     .trim();
+}
+
+function normalizeAudienceSummary_(raw) {
+  var source = raw || {};
+  var situations = (source.situations || [])
+    .map(function (s) {
+      return normalizePlainText_(s);
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+  while (situations.length < 3) {
+    situations.push("（シチュエーション未入力）");
+  }
+
+  var terms = (source.terms || [])
+    .map(function (t) {
+      if (!t) return null;
+      var term = normalizePlainText_(t.term || "");
+      var plain = normalizePlainText_(t.plain || "");
+      if (!term || !plain) return null;
+      return { term: term, plain: plain };
+    })
+    .filter(Boolean)
+    .slice(0, 5);
+
+  return {
+    conclusion:
+      normalizeMultilineText_(source.conclusion) || "（結論未入力）",
+    situations: situations,
+    terms: terms,
+  };
 }
 
 /**
@@ -365,10 +409,24 @@ function repairExistingArticles() {
 
   articles.forEach(function (article) {
     try {
-      var conclusion = normalizeMultilineText_(article.summary.conclusion);
+      var summary = article.summary || {};
+      var hasDual = summary.general && summary.engineer;
+      var generalConclusion = hasDual
+        ? normalizeMultilineText_(summary.general.conclusion)
+        : normalizeMultilineText_(summary.conclusion);
+      var engineerConclusion = hasDual
+        ? normalizeMultilineText_(summary.engineer.conclusion)
+        : generalConclusion;
+      var rawGeneral = hasDual
+        ? String(summary.general.conclusion || "")
+        : String(summary.conclusion || "");
+      var rawEngineer = hasDual
+        ? String(summary.engineer.conclusion || "")
+        : rawGeneral;
+
       var needsTitle = looksEnglishTitle_(article.title);
       var needsConclusion =
-        String(article.summary.conclusion || "").indexOf("\\n") !== -1;
+        rawGeneral.indexOf("\\n") !== -1 || rawEngineer.indexOf("\\n") !== -1;
       if (!needsTitle && !needsConclusion) {
         skipped += 1;
         return;
@@ -381,9 +439,34 @@ function repairExistingArticles() {
           geminiModel,
           article.source,
           article.title,
-          conclusion,
+          generalConclusion,
         );
         Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
+      }
+
+      var payloadSummary;
+      if (hasDual) {
+        payloadSummary = {
+          general: {
+            conclusion: generalConclusion,
+            situations: (summary.general.situations || []).map(
+              normalizePlainText_,
+            ),
+            terms: summary.general.terms || [],
+          },
+          engineer: {
+            conclusion: engineerConclusion,
+            situations: (summary.engineer.situations || []).map(
+              normalizePlainText_,
+            ),
+            terms: summary.engineer.terms || [],
+          },
+        };
+      } else {
+        payloadSummary = {
+          conclusion: generalConclusion,
+          situations: (summary.situations || []).map(normalizePlainText_),
+        };
       }
 
       postIngest_(ingestUrl, ingestSecret, {
@@ -391,12 +474,7 @@ function repairExistingArticles() {
         title: titleJa,
         url: article.url,
         publishedAt: article.publishedAt,
-        summary: {
-          conclusion: conclusion,
-          situations: (article.summary.situations || []).map(
-            normalizePlainText_,
-          ),
-        },
+        summary: payloadSummary,
       });
       fixed += 1;
       Logger.log("repaired: " + article.title + " -> " + titleJa);

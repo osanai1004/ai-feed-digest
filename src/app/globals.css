@@ -304,6 +304,41 @@ a {
   background: var(--panel);
 }
 
+.ui-audience-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  border-radius: 1rem;
+  border: 1px solid var(--hairline);
+  background: var(--canvas);
+  padding: 0.35rem;
+}
+
+.ui-audience-tab {
+  border: 0;
+  border-radius: 0.8rem;
+  background: transparent;
+  padding: 0.7rem 0.75rem;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--mute);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.ui-audience-tab:hover {
+  color: var(--ink-soft);
+}
+
+.ui-audience-tab.is-active {
+  background: var(--gradient-brand);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(20, 184, 166, 0.25);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

@@ -32,11 +32,15 @@ export function parseArticleListQuery(searchParams: {
 }
 
 function articleSearchText(article: Article): string {
+  const voices = [article.summary.general, article.summary.engineer];
   return [
     article.title,
     article.source,
-    article.summary.conclusion,
-    ...article.summary.situations,
+    ...voices.flatMap((voice) => [
+      voice.conclusion,
+      ...voice.situations,
+      ...voice.terms.flatMap((term) => [term.term, term.plain]),
+    ]),
   ]
     .join("\n")
     .toLowerCase();

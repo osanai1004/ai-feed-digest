@@ -16,10 +16,10 @@ alwaysApply: false
 
 ```tsx
 // ❌ BAD: 同じバッジ見た目を page と detail にコピペ
-<span className="rounded-full bg-gradient-to-r from-teal-500 to-sky-500 ...">AI更新要約</span>
+<span className="rounded-full bg-gradient-to-r from-teal-500 to-sky-500 ...">ようやくわかる</span>
 
 // ✅ GOOD: 2回目で切り出す
-<BrandBadge>AI更新要約</BrandBadge>
+<BrandBadge>ようやくわかる</BrandBadge>
 ```
 
 ## 2. 部品は props で見た目と文言を受ける
