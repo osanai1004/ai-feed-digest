@@ -432,7 +432,9 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "- engineer: 正確な用語OK。実装・運用・互換性への影響を明確に\n" +
     "- conclusion は各ボイス3要素の配列。1要素は1文\n" +
     "- situations は各ボイス3点。読者の現実業務に寄せる\n" +
-    "- terms は記事理解に必要な語だけ0〜5件。plain は1文で簡潔に\n" +
+    "- general.terms は非エンジニアがつまづきやすい語を3〜7件。固有名詞・略語・製品機能名を優先\n" +
+    "- engineer.terms は実装理解に必要な語だけ0〜5件\n" +
+    "- terms の plain は1文で簡潔に（general はたとえ話OK、engineer は正確な定義）\n" +
     "- やや詳しめ。ただし冗長にしない\n" +
     "- 不明点は推測で埋めない\n" +
     "- JSONとして必ずパースできる形で返す（末尾カンマ禁止）\n\n" +
@@ -533,7 +535,7 @@ function normalizeAudienceSummary_(raw) {
       return { term: term, plain: plain };
     })
     .filter(Boolean)
-    .slice(0, 5);
+    .slice(0, 7);
 
   return {
     conclusion: conclusionToText_(source.conclusion) || "（結論未入力）",
