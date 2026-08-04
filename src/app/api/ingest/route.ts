@@ -19,11 +19,18 @@ function isValidPayload(body: unknown): body is IngestPayload {
 
   const general = b.summary.general as Record<string, unknown>;
   const engineer = b.summary.engineer as Record<string, unknown>;
-  if (typeof general.conclusion !== "string") return false;
+  if (!isConclusionField(general.conclusion)) return false;
   if (!Array.isArray(general.situations)) return false;
-  if (typeof engineer.conclusion !== "string") return false;
+  if (!isConclusionField(engineer.conclusion)) return false;
   if (!Array.isArray(engineer.situations)) return false;
   return true;
+}
+
+function isConclusionField(value: unknown): boolean {
+  return (
+    typeof value === "string" ||
+    (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
 }
 
 export async function POST(request: Request) {

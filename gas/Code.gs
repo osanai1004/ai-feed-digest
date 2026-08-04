@@ -247,15 +247,16 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "あなたはAIプロダクト更新を、読者別に翻訳する編集者です。\n" +
     "同じ事実を『非エンジニア向け』と『エンジニア向け』の2ボイスで日本語要約してください。\n" +
     "必ず次のJSONだけを返してください（前後に説明文やコードフェンス禁止）。\n" +
+    "文字列の中に実際の改行・タブを入れないでください。conclusion は配列で返してください。\n" +
     "{\n" +
     '  "title": "共通の日本語見出し（簡潔・ニュース見出し調）",\n' +
     '  "general": {\n' +
-    '    "conclusion": "非エンジニア向け結論。3行程度。各行は実際の改行で区切る",\n' +
+    '    "conclusion": ["非エンジニア向け結論1", "結論2", "結論3"],\n' +
     '    "situations": ["使える場面1", "2", "3"],\n' +
     '    "terms": [{"term":"用語","plain":"一口解説"}]\n' +
     "  },\n" +
     '  "engineer": {\n' +
-    '    "conclusion": "エンジニア向け結論。3行程度。各行は実際の改行で区切る",\n' +
+    '    "conclusion": ["エンジニア向け結論1", "結論2", "結論3"],\n' +
     '    "situations": ["使える場面1", "2", "3"],\n' +
     '    "terms": [{"term":"用語","plain":"正確で短い定義"}]\n' +
     "  }\n" +
@@ -265,11 +266,12 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "- 事実関係は両ボイスで一致させる。言い方だけ変える\n" +
     "- general: 専門用語を避けるか直後に噛み砕く。企画・営業・事務でも分かる言い方\n" +
     "- engineer: 正確な用語OK。実装・運用・互換性への影響を明確に\n" +
-    "- conclusion 内に文字としての \\\\n を書かない。普通の改行を使う\n" +
+    "- conclusion は各ボイス3要素の配列。1要素は1文\n" +
     "- situations は各ボイス3点。読者の現実業務に寄せる\n" +
     "- terms は記事理解に必要な語だけ0〜5件。plain は1文で簡潔に\n" +
     "- やや詳しめ。ただし冗長にしない\n" +
-    "- 不明点は推測で埋めない\n\n" +
+    "- 不明点は推測で埋めない\n" +
+    "- JSONとして必ずパースできる形で返す（末尾カンマ禁止）\n\n" +
     "source: " +
     source +
     "\n" +
@@ -281,44 +283,50 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
 
   var lastError = null;
   for (var attempt = 1; attempt <= 3; attempt++) {
-    var response = UrlFetchApp.fetch(endpoint, {
-      method: "post",
-      contentType: "application/json",
-      payload: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3 },
-      }),
-      muteHttpExceptions: true,
-    });
+    try {
+      var response = UrlFetchApp.fetch(endpoint, {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+          },
+        }),
+        muteHttpExceptions: true,
+      });
 
-    var status = response.getResponseCode();
-    var text = response.getContentText();
-    if (status === 429) {
-      lastError = new Error("Gemini API error: " + status + " " + text);
-      Utilities.sleep(attempt * 20000);
-      continue;
-    }
-    if (status >= 300) {
-      throw new Error("Gemini API error: " + status + " " + text);
-    }
+      var status = response.getResponseCode();
+      var text = response.getContentText();
+      if (status === 429) {
+        lastError = new Error("Gemini API error: " + status + " " + text);
+        Utilities.sleep(attempt * 20000);
+        continue;
+      }
+      if (status >= 300) {
+        throw new Error("Gemini API error: " + status + " " + text);
+      }
 
-    var data = JSON.parse(text);
-    var raw = (((data.candidates || [])[0] || {}).content || {}).parts || [];
-    var content = (raw[0] && raw[0].text) || "";
-    content = content
-      .replace(/```json/gi, "")
-      .replace(/```/g, "")
-      .trim();
-
-    var parsed = JSON.parse(content);
-    if (!parsed.general || !parsed.engineer) {
-      throw new Error("Gemini response missing fields: " + content);
+      var data = JSON.parse(text);
+      var raw = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+      var content = (raw[0] && raw[0].text) || "";
+      var parsed = parseModelJson_(content);
+      if (!parsed.general || !parsed.engineer) {
+        throw new Error("Gemini response missing fields: " + content);
+      }
+      return {
+        title: normalizePlainText_(parsed.title || title),
+        general: normalizeAudienceSummary_(parsed.general),
+        engineer: normalizeAudienceSummary_(parsed.engineer),
+      };
+    } catch (e) {
+      lastError = e;
+      Logger.log(
+        "summarize retry " + attempt + ": " + (e && e.message ? e.message : e),
+      );
+      Utilities.sleep(attempt * 3000);
     }
-    return {
-      title: normalizePlainText_(parsed.title || title),
-      general: normalizeAudienceSummary_(parsed.general),
-      engineer: normalizeAudienceSummary_(parsed.engineer),
-    };
   }
 
   throw lastError || new Error("Gemini API failed after retries");
@@ -364,11 +372,92 @@ function normalizeAudienceSummary_(raw) {
     .slice(0, 5);
 
   return {
-    conclusion:
-      normalizeMultilineText_(source.conclusion) || "（結論未入力）",
+    conclusion: conclusionToText_(source.conclusion) || "（結論未入力）",
     situations: situations,
     terms: terms,
   };
+}
+
+function conclusionToText_(value) {
+  if (Object.prototype.toString.call(value) === "[object Array]") {
+    return value
+      .map(function (line) {
+        return normalizePlainText_(line);
+      })
+      .filter(Boolean)
+      .slice(0, 5)
+      .join("\n");
+  }
+  return normalizeMultilineText_(value);
+}
+
+/** モデル出力をできるだけJSONとして読む */
+function parseModelJson_(content) {
+  var cleaned = String(content || "")
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+    .trim();
+  var start = cleaned.indexOf("{");
+  var end = cleaned.lastIndexOf("}");
+  if (start >= 0 && end > start) {
+    cleaned = cleaned.slice(start, end + 1);
+  }
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (e1) {
+    var sanitized = sanitizeJsonControlChars_(cleaned).replace(
+      /,\s*([}\]])/g,
+      "$1",
+    );
+    return JSON.parse(sanitized);
+  }
+}
+
+/** JSON文字列リテラル内の生改行などをエスケープ */
+function sanitizeJsonControlChars_(text) {
+  var out = "";
+  var inString = false;
+  var escaped = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text.charAt(i);
+    var code = text.charCodeAt(i);
+    if (inString) {
+      if (escaped) {
+        out += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === "\\") {
+        out += ch;
+        escaped = true;
+        continue;
+      }
+      if (ch === '"') {
+        out += ch;
+        inString = false;
+        continue;
+      }
+      if (ch === "\n") {
+        out += "\\n";
+        continue;
+      }
+      if (ch === "\r") {
+        out += "\\r";
+        continue;
+      }
+      if (ch === "\t") {
+        out += "\\t";
+        continue;
+      }
+      if (code < 32) continue;
+      out += ch;
+    } else {
+      if (ch === '"') inString = true;
+      out += ch;
+    }
+  }
+  return out;
 }
 
 /**
@@ -493,6 +582,152 @@ function repairExistingArticles() {
       errors.length,
   );
   if (errors.length) Logger.log("errors: " + errors.join(" | "));
+}
+
+/**
+ * 既存記事を『非エンジニア向け / エンジニア向け』の2ボイスで再要約して上書きする。
+ *
+ * 使い方:
+ * 1. APP_BASE_URL / INGEST_URL / INGEST_SECRET / GOOGLE_API_KEY を設定
+ * 2. エディタで backfillDualVoiceArticles を実行
+ * 3. 件数が多い場合は何度か実行（続きから進む）
+ *
+ * 任意プロパティ:
+ * - BACKFILL_LIMIT  : 1回あたり処理件数（既定 12）
+ * - BACKFILL_CURSOR : 進捗（自動更新。最初からやり直すなら 0 をセット）
+ */
+function backfillDualVoiceArticles() {
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty("GOOGLE_API_KEY");
+  var ingestUrl = props.getProperty("INGEST_URL");
+  var ingestSecret = props.getProperty("INGEST_SECRET");
+  var appBaseUrl = (props.getProperty("APP_BASE_URL") || "").replace(/\/$/, "");
+  var geminiModel = props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
+  var limit = Number(props.getProperty("BACKFILL_LIMIT") || 12);
+  var cursor = Number(props.getProperty("BACKFILL_CURSOR") || 0);
+
+  if (!apiKey || !ingestUrl || !ingestSecret || !appBaseUrl) {
+    throw new Error(
+      "GOOGLE_API_KEY / INGEST_URL / INGEST_SECRET / APP_BASE_URL を設定してください",
+    );
+  }
+  if (!isFinite(limit) || limit < 1) limit = 12;
+  if (!isFinite(cursor) || cursor < 0) cursor = 0;
+
+  var response = UrlFetchApp.fetch(appBaseUrl + "/api/articles", {
+    muteHttpExceptions: true,
+  });
+  if (response.getResponseCode() >= 300) {
+    throw new Error(
+      "articles fetch failed: " +
+        response.getResponseCode() +
+        " " +
+        response.getContentText(),
+    );
+  }
+
+  var data = JSON.parse(response.getContentText());
+  var articles = data.articles || [];
+  var slice = articles.slice(cursor, cursor + limit);
+  var updated = 0;
+  var errors = [];
+
+  Logger.log(
+    "backfill start total=" +
+      articles.length +
+      " cursor=" +
+      cursor +
+      " limit=" +
+      limit +
+      " batch=" +
+      slice.length,
+  );
+
+  slice.forEach(function (article, index) {
+    try {
+      var bodyText = buildBackfillBody_(article);
+      var summary = summarizeWithGemini_(
+        apiKey,
+        geminiModel,
+        article.source,
+        article.title,
+        bodyText,
+      );
+
+      postIngest_(ingestUrl, ingestSecret, {
+        source: article.source,
+        title: summary.title || article.title,
+        url: article.url,
+        publishedAt: article.publishedAt,
+        summary: {
+          general: summary.general,
+          engineer: summary.engineer,
+        },
+      });
+      updated += 1;
+      Logger.log(
+        "backfilled (" +
+          (cursor + index + 1) +
+          "/" +
+          articles.length +
+          "): " +
+          article.title,
+      );
+      Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
+    } catch (e) {
+      errors.push(article.title + ": " + e.message);
+      Logger.log("backfill error: " + e.message);
+      if (String(e.message).indexOf("429") !== -1) {
+        Utilities.sleep(35000);
+      }
+    }
+  });
+
+  var nextCursor = cursor + slice.length;
+  if (nextCursor >= articles.length) {
+    props.setProperty("BACKFILL_CURSOR", "0");
+    Logger.log("backfill complete — cursor reset to 0");
+  } else {
+    props.setProperty("BACKFILL_CURSOR", String(nextCursor));
+    Logger.log(
+      "backfill paused — run again to continue from cursor=" + nextCursor,
+    );
+  }
+
+  Logger.log(
+    "backfill done updated=" + updated + " errors=" + errors.length,
+  );
+  if (errors.length) Logger.log("errors: " + errors.join(" | "));
+}
+
+/** 既存要約を材料にして再要約用本文を作る */
+function buildBackfillBody_(article) {
+  var summary = article.summary || {};
+  var general = summary.general || null;
+  var engineer = summary.engineer || null;
+  var lines = [];
+
+  lines.push("既存記事を2ボイス（非エンジニア向け / エンジニア向け）に再編集してください。");
+  lines.push("元URL: " + (article.url || ""));
+  lines.push("既存タイトル: " + (article.title || ""));
+
+  if (general) {
+    lines.push("--- 既存 general ---");
+    lines.push(conclusionToText_(general.conclusion));
+    lines.push((general.situations || []).join(" / "));
+  } else if (summary.conclusion) {
+    lines.push("--- 既存 conclusion ---");
+    lines.push(conclusionToText_(summary.conclusion));
+    lines.push((summary.situations || []).join(" / "));
+  }
+
+  if (engineer) {
+    lines.push("--- 既存 engineer ---");
+    lines.push(conclusionToText_(engineer.conclusion));
+    lines.push((engineer.situations || []).join(" / "));
+  }
+
+  return lines.join("\n");
 }
 
 function looksEnglishTitle_(title) {

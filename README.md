@@ -76,8 +76,9 @@ npx vercel --prod --yes
    - `INGEST_SECRET` = Vercel と同じ値
    - `SLACK_WEBHOOK_URL` = （任意）Slack Incoming Webhook
    - `APP_BASE_URL` = （任意）アプリURL
-4. `runOnce` を手動実行（初回認可あり）
-5. 必要なら `createDailyTrigger` を実行
+4. `runOnce` を手動実行（初回認可あり）… 新着のみ取り込み
+5. 既存記事を2ボイス化したいときは `backfillDualVoiceArticles` を実行（必要なら複数回）
+6. 必要なら `createDailyTrigger` を実行
 
 監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js / Hugging Face / GitHub Changelog / Cloudflare  
 詳細は `gas/README.md`。Slack 通知は Webhook 未設定ならスキップ（後から有効化可）。

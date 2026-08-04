@@ -40,12 +40,26 @@ function normalizeTerms(raw: unknown): ArticleTerm[] {
     .slice(0, 8);
 }
 
+function conclusionToText(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value
+      .map((line) =>
+        normalizeMultilineText(String(line))
+          .replace(/\s*\n+\s*/g, " ")
+          .trim(),
+      )
+      .filter(Boolean)
+      .slice(0, 5)
+      .join("\n");
+  }
+  return normalizeMultilineText(String(value ?? "")).trim();
+}
+
 export function normalizeAudienceSummary(
   raw: Partial<AudienceSummary> | null | undefined,
 ): AudienceSummary {
   return {
-    conclusion:
-      normalizeMultilineText(raw?.conclusion ?? "").trim() || "（結論未入力）",
+    conclusion: conclusionToText(raw?.conclusion) || "（結論未入力）",
     situations: normalizeSituations(raw?.situations),
     terms: normalizeTerms(raw?.terms),
   };

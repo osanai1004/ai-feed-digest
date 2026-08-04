@@ -15,8 +15,23 @@
 
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
-6. 既存記事の英語タイトル / 結論の `\n` 文字化け直しは `repairExistingArticles` を一度実行  
-   （`APP_BASE_URL` 必須。Gemini 呼び出しあり）
+6. **既存記事を2ボイス化**するときは `backfillDualVoiceArticles` を実行  
+   （`APP_BASE_URL` 必須。1回あたり既定12件。足りなければ再度実行で続きから進む）
+7. 英語タイトル / 結論の `\n` 文字化け直しだけなら `repairExistingArticles`
+
+### `runOnce` と `backfillDualVoiceArticles` の違い
+
+| 関数 | 対象 | 用途 |
+|---|---|---|
+| `runOnce` | RSSの**新着だけ** | これから入る記事を2ボイスで取り込む |
+| `backfillDualVoiceArticles` | アプリ内の**既存記事** | 過去記事を2ボイスに書き換える |
+
+任意プロパティ:
+
+| プロパティ | 意味 |
+|---|---|
+| `BACKFILL_LIMIT` | 1回の処理件数（既定 `12`） |
+| `BACKFILL_CURSOR` | 進捗位置（自動更新。最初からやり直すなら `0`） |
 
 ## 監視サイト（FEEDS）
 
