@@ -1,3 +1,10 @@
+/** ブランド名 */
+export const APP_NAME = "ようやくわかる";
+
+/** ブランド説明（ヒーロー / OGP 共通） */
+export const APP_DESCRIPTION =
+  "長い記事も、要約すればようやくわかる。AIや開発ツールの更新を、結論と使える場面だけで。";
+
 /** 一覧1ページあたりの記事数 */
 export const ARTICLES_PER_PAGE = 20;
 

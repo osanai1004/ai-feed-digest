@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -15,13 +16,34 @@ const ui = Manrope({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+function resolveMetadataBase(): URL {
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (production) return new URL(`https://${production}`);
+  const vercel = process.env.VERCEL_URL;
+  if (vercel) return new URL(`https://${vercel}`);
+  return new URL("http://localhost:3000");
+}
+
 export const metadata: Metadata = {
-  title: "ようやくわかる",
-  description:
-    "「要約」したら「ようやくわかる」。ChatGPT・Claude・Geminiなどの公式アプデを、結論と使える場面だけで読むAI更新リーダー。",
+  metadataBase: resolveMetadataBase(),
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
+  applicationName: APP_NAME,
+  openGraph: {
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+    siteName: APP_NAME,
+    locale: "ja_JP",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
-    title: "ようやくわかる",
+    title: APP_NAME,
     statusBarStyle: "default",
   },
 };
