@@ -6,7 +6,7 @@
 
 | プロパティ | 必須 | 値 |
 |---|---|---|
-| `GOOGLE_API_KEY` | Yes | Gemini API キー（既存キーで可） |
+| `GOOGLE_API_KEY` | Yes | Gemini API キー |
 | `INGEST_URL` | Yes | `https://あなたのアプリ.vercel.app/api/ingest` |
 | `INGEST_SECRET` | Yes | Vercel の `INGEST_SECRET` と同じ |
 | `SLACK_WEBHOOK_URL` | No | Slack Incoming Webhook。未設定なら通知しない |
