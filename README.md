@@ -4,6 +4,10 @@ AI の公式アプデを RSS で集め、日本語の「結論＋使える場面
 
 **Demo:** https://yoyaku-wakaru.vercel.app
 
+![一覧画面](docs/images/home.png)
+
+![詳細画面（非エンジニア向け要約）](docs/images/article.png)
+
 ChatGPT / Claude / Gemini などの更新を追いながら、「何が変わったか」「自分の仕事にどう効くか」だけ先に把握できます。
 
 ## 主な機能
