@@ -43,7 +43,8 @@ export function parseArticleListQuery(searchParams: {
   return { q, category, genre, page };
 }
 
-function articleSearchText(article: Article): string {
+/** 検索・ウォッチキーワード照合に使う記事の全文テキスト */
+export function articleSearchText(article: Article): string {
   const voices = [article.summary.general, article.summary.engineer];
   return [
     article.title,

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BrandBadge } from "@/components/ui/brand-badge";
+import { PillLink } from "@/components/ui/pill-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { APP_DESCRIPTION_LINES, APP_NAME } from "@/lib/constants";
 import { formatDate } from "@/lib/formatDate";
@@ -28,7 +29,10 @@ export function HomeHero({ lastUpdatedAt }: Props) {
           />
           <BrandBadge>更新要約</BrandBadge>
         </Link>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <PillLink href="/library">保存した記事</PillLink>
+          <ThemeToggle />
+        </div>
       </div>
       <h1 className="font-display max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]">
         <Link

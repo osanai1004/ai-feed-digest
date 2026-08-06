@@ -339,6 +339,46 @@ a {
   box-shadow: 0 6px 16px rgba(20, 184, 166, 0.25);
 }
 
+.ui-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  padding: 0.4rem 0.85rem;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.ui-action-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+}
+
+.ui-action-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ui-action-btn.is-active {
+  background: var(--chip-teal-bg);
+  border-color: var(--accent);
+  color: var(--chip-teal-fg);
+}
+
+.ui-action-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
