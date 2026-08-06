@@ -51,6 +51,7 @@ export function articleSearchText(article: Article): string {
     article.source,
     ...voices.flatMap((voice) => [
       voice.conclusion,
+      voice.detail,
       ...voice.situations,
       ...voice.terms.flatMap((term) => [term.term, term.plain]),
     ]),

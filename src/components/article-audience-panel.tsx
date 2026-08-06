@@ -40,6 +40,7 @@ export function ArticleAudiencePanel({ summary }: Props) {
 
   const content = getAudienceSummary(summary, voice);
   const quick = depth === "quick";
+  const hasDetail = Boolean(content.detail.trim());
 
   return (
     <div className="mt-8">
@@ -84,7 +85,7 @@ export function ArticleAudiencePanel({ summary }: Props) {
       {quick ? (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <p className="text-[13px] leading-6 text-[var(--body)]">
-            使いどころ・用語解説は「詳しく読む」で表示されます。
+            詳細内容・使いどころ・用語解説は「詳しく読む」で表示されます。
           </p>
           <button
             type="button"
@@ -94,6 +95,46 @@ export function ArticleAudiencePanel({ summary }: Props) {
             詳しく読む →
           </button>
         </div>
+      ) : null}
+
+      {!quick && hasDetail ? (
+        <section className="ui-panel mt-5 rounded-3xl p-5 sm:p-6">
+          <h2 className="mb-3 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-sky-fg)] uppercase">
+            詳細内容
+          </h2>
+          <div className="whitespace-pre-line text-[16px] leading-8 text-[var(--ink-soft)]">
+            {content.detail}
+          </div>
+        </section>
+      ) : null}
+
+      {!quick && !hasDetail ? (
+        <p className="mt-4 text-[12px] leading-5 text-[var(--mute)]">
+          この記事にはまだ詳細内容がありません。今後の取り込み・再要約で追加されます。
+        </p>
+      ) : null}
+
+      {!quick ? (
+        <section className="mt-6">
+          <h2 className="mb-4 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-orange-fg)] uppercase">
+            使えるシチュエーション
+          </h2>
+          <ol className="grid gap-3">
+            {content.situations.map((item, index) => (
+              <li
+                key={`${voice}-${index}-${item}`}
+                className="flex gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--canvas)] p-4"
+              >
+                <span className="ui-source-bar flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-extrabold text-white">
+                  {index + 1}
+                </span>
+                <span className="pt-1 text-[15px] leading-7 text-[var(--ink-soft)]">
+                  {item}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
       ) : null}
 
       {!quick && content.terms.length > 0 ? (
@@ -118,29 +159,6 @@ export function ArticleAudiencePanel({ summary }: Props) {
             ))}
           </ul>
         </section>
-      ) : null}
-
-      {!quick ? (
-      <section className="mt-6">
-        <h2 className="mb-4 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-orange-fg)] uppercase">
-          使えるシチュエーション
-        </h2>
-        <ol className="grid gap-3">
-          {content.situations.map((item, index) => (
-            <li
-              key={`${voice}-${index}-${item}`}
-              className="flex gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--canvas)] p-4"
-            >
-              <span className="ui-source-bar flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-extrabold text-white">
-                {index + 1}
-              </span>
-              <span className="pt-1 text-[15px] leading-7 text-[var(--ink-soft)]">
-                {item}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
       ) : null}
     </div>
   );

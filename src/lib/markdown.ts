@@ -32,11 +32,18 @@ export function articleToMarkdown(
     "### 結論",
     "",
     summary.conclusion,
+  ];
+
+  if (summary.detail.trim()) {
+    lines.push("", "### 詳細内容", "", summary.detail);
+  }
+
+  lines.push(
     "",
     "### 使えるシチュエーション",
     "",
     ...summary.situations.map((item, index) => `${index + 1}. ${item}`),
-  ];
+  );
 
   if (summary.terms.length > 0) {
     lines.push("", "### 用語ひとこと", "");
@@ -64,6 +71,13 @@ export function articleToSlackText(
     "",
     "■ 結論",
     ...slackBulletLines(summary.conclusion),
+  ];
+
+  if (summary.detail.trim()) {
+    lines.push("", "■ 詳細内容", ...slackBulletLines(summary.detail));
+  }
+
+  lines.push(
     "",
     "■ 使える場面",
     ...summary.situations
@@ -73,6 +87,7 @@ export function articleToSlackText(
     "",
     "■ 原文",
     article.url,
-  ];
+  );
+
   return lines.join("\n");
 }

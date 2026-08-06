@@ -19,6 +19,7 @@ function hashString(input: string): string {
 function voiceFingerprint(voice: AudienceSummary): string {
   return [
     voice.conclusion,
+    voice.detail,
     voice.situations.join("\u0001"),
     voice.terms.map((t) => `${t.term}\u0002${t.plain}`).join("\u0001"),
   ].join("\u0003");

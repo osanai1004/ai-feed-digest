@@ -7,9 +7,16 @@ export type ArticleTerm = {
   plain: string;
 };
 
-/** 読者向けボイス1つ分（結論・場面・用語） */
+/** 読者向けボイス1つ分（結論・詳細・場面・用語） */
 export type AudienceSummary = {
+  /** 30秒で読む用の短い結論（改行区切り可） */
   conclusion: string;
+  /**
+   * 詳しく読む用の詳細内容。
+   * 結論を繰り返さず、背景・変更点・注意点を補足する。
+   * 旧データや未生成時は空文字。
+   */
+  detail: string;
   situations: string[];
   terms: ArticleTerm[];
 };
