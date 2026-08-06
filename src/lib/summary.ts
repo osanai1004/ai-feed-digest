@@ -55,11 +55,29 @@ function conclusionToText(value: unknown): string {
   return normalizeMultilineText(String(value ?? "")).trim();
 }
 
+/** 詳細内容（詳しく読む用）。配列でも文字列でも受け付ける。未指定は空文字 */
+function detailToText(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    return value
+      .map((line) =>
+        normalizeMultilineText(String(line))
+          .replace(/\s*\n+\s*/g, " ")
+          .trim(),
+      )
+      .filter(Boolean)
+      .slice(0, 6)
+      .join("\n");
+  }
+  return normalizeMultilineText(String(value)).trim();
+}
+
 export function normalizeAudienceSummary(
   raw: Partial<AudienceSummary> | null | undefined,
 ): AudienceSummary {
   return {
     conclusion: conclusionToText(raw?.conclusion) || "（結論未入力）",
+    detail: detailToText(raw?.detail),
     situations: normalizeSituations(raw?.situations),
     terms: normalizeTerms(raw?.terms),
   };
@@ -106,6 +124,7 @@ export function dualFromLegacy(
     general: voice,
     engineer: {
       conclusion: voice.conclusion,
+      detail: voice.detail,
       situations: [...voice.situations],
       terms: voice.terms.map((t) => ({ ...t })),
     },

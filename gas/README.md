@@ -15,16 +15,29 @@
 
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
-6. **既存記事を2ボイス化**するときは `backfillDualVoiceArticles` を実行  
+6. **既存記事を2ボイス化／詳細内容を埋め直す**ときは `backfillDualVoiceArticles` を実行  
    （`APP_BASE_URL` 必須。1回あたり既定12件。足りなければ再度実行で続きから進む）
 7. 英語タイトル / 結論の `\n` 文字化け直しだけなら `repairExistingArticles`
+
+### 要約フィールド
+
+各ボイス（非エンジニア向け / エンジニア向け）は次を持ちます。
+
+| フィールド | 画面での使われ方 |
+|---|---|
+| `conclusion` | 「30秒で読む」と「詳しく読む」の両方に出る短い結論 |
+| `detail` | 「詳しく読む」だけに出る詳細内容（背景・変更点・注意点） |
+| `situations` | 使えるシチュエーション |
+| `terms` | 用語ひとこと |
+
+既存記事に `detail` が無い場合、画面では詳細内容セクションを出しません。`backfillDualVoiceArticles` で再要約すると埋まります。
 
 ### `runOnce` と `backfillDualVoiceArticles` の違い
 
 | 関数 | 対象 | 用途 |
 |---|---|---|
-| `runOnce` | RSSの**新着だけ** | これから入る記事を2ボイスで取り込む |
-| `backfillDualVoiceArticles` | アプリ内の**既存記事** | 過去記事を2ボイスに書き換える |
+| `runOnce` | RSSの**新着だけ** | これから入る記事を2ボイス＋詳細内容付きで取り込む |
+| `backfillDualVoiceArticles` | アプリ内の**既存記事** | 過去記事を2ボイス化し、詳細内容も生成し直す |
 
 任意プロパティ:
 

@@ -411,16 +411,18 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "あなたはAIプロダクト更新を、読者別に翻訳する編集者です。\n" +
     "同じ事実を『非エンジニア向け』と『エンジニア向け』の2ボイスで日本語要約してください。\n" +
     "必ず次のJSONだけを返してください（前後に説明文やコードフェンス禁止）。\n" +
-    "文字列の中に実際の改行・タブを入れないでください。conclusion は配列で返してください。\n" +
+    "文字列の中に実際の改行・タブを入れないでください。conclusion / detail は配列で返してください。\n" +
     "{\n" +
     '  "title": "共通の日本語見出し（簡潔・ニュース見出し調）",\n' +
     '  "general": {\n' +
     '    "conclusion": ["非エンジニア向け結論1", "結論2", "結論3"],\n' +
+    '    "detail": ["詳細の補足1", "詳細の補足2", "詳細の補足3"],\n' +
     '    "situations": ["使える場面1", "2", "3"],\n' +
     '    "terms": [{"term":"用語","plain":"一口解説"}]\n' +
     "  },\n" +
     '  "engineer": {\n' +
     '    "conclusion": ["エンジニア向け結論1", "結論2", "結論3"],\n' +
+    '    "detail": ["詳細の補足1", "詳細の補足2", "詳細の補足3"],\n' +
     '    "situations": ["使える場面1", "2", "3"],\n' +
     '    "terms": [{"term":"用語","plain":"正確で短い定義"}]\n' +
     "  }\n" +
@@ -430,7 +432,9 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "- 事実関係は両ボイスで一致させる。言い方だけ変える\n" +
     "- general: 専門用語を避けるか直後に噛み砕く。企画・営業・事務でも分かる言い方\n" +
     "- engineer: 正確な用語OK。実装・運用・互換性への影響を明確に\n" +
-    "- conclusion は各ボイス3要素の配列。1要素は1文\n" +
+    "- conclusion は各ボイス3要素の配列。1要素は1文。『30秒で読む』用の要約\n" +
+    "- detail は各ボイス2〜4要素の配列。1要素は1文。『詳しく読む』用の詳細内容\n" +
+    "- detail は結論の繰り返し禁止。背景・変更点・注意点・影響範囲を補足する\n" +
     "- situations は各ボイス3点。読者の現実業務に寄せる\n" +
     "- general.terms は非エンジニアがつまづきやすい語を3〜7件。固有名詞・略語・製品機能名を優先\n" +
     "- engineer.terms は実装理解に必要な語だけ0〜5件\n" +
@@ -539,6 +543,7 @@ function normalizeAudienceSummary_(raw) {
 
   return {
     conclusion: conclusionToText_(source.conclusion) || "（結論未入力）",
+    detail: detailToText_(source.detail),
     situations: situations,
     terms: terms,
   };
@@ -552,6 +557,21 @@ function conclusionToText_(value) {
       })
       .filter(Boolean)
       .slice(0, 5)
+      .join("\n");
+  }
+  return normalizeMultilineText_(value);
+}
+
+/** 詳しく読む用の詳細内容。配列でも文字列でも受け付ける。未指定は空文字 */
+function detailToText_(value) {
+  if (value == null || value === "") return "";
+  if (Object.prototype.toString.call(value) === "[object Array]") {
+    return value
+      .map(function (line) {
+        return normalizePlainText_(line);
+      })
+      .filter(Boolean)
+      .slice(0, 6)
       .join("\n");
   }
   return normalizeMultilineText_(value);
@@ -704,6 +724,7 @@ function repairExistingArticles() {
         payloadSummary = {
           general: {
             conclusion: generalConclusion,
+            detail: detailToText_(summary.general.detail),
             situations: (summary.general.situations || []).map(
               normalizePlainText_,
             ),
@@ -711,6 +732,7 @@ function repairExistingArticles() {
           },
           engineer: {
             conclusion: engineerConclusion,
+            detail: detailToText_(summary.engineer.detail),
             situations: (summary.engineer.situations || []).map(
               normalizePlainText_,
             ),
@@ -874,12 +896,19 @@ function buildBackfillBody_(article) {
   lines.push(
     "既存記事を2ボイス（非エンジニア向け / エンジニア向け）に再編集してください。",
   );
+  lines.push(
+    "conclusion（30秒で読む）と detail（詳しく読む用の詳細内容）の両方を必ず生成してください。",
+  );
   lines.push("元URL: " + (article.url || ""));
   lines.push("既存タイトル: " + (article.title || ""));
 
   if (general) {
     lines.push("--- 既存 general ---");
     lines.push(conclusionToText_(general.conclusion));
+    if (general.detail) {
+      lines.push("--- 既存 general.detail ---");
+      lines.push(detailToText_(general.detail));
+    }
     lines.push((general.situations || []).join(" / "));
   } else if (summary.conclusion) {
     lines.push("--- 既存 conclusion ---");
@@ -890,6 +919,10 @@ function buildBackfillBody_(article) {
   if (engineer) {
     lines.push("--- 既存 engineer ---");
     lines.push(conclusionToText_(engineer.conclusion));
+    if (engineer.detail) {
+      lines.push("--- 既存 engineer.detail ---");
+      lines.push(detailToText_(engineer.detail));
+    }
     lines.push((engineer.situations || []).join(" / "));
   }
 
