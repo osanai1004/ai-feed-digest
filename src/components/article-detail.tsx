@@ -1,3 +1,4 @@
+import { ArticleActions } from "@/components/article-actions";
 import { ArticleAudiencePanel } from "@/components/article-audience-panel";
 import { SourceBadge, sourceToneVars } from "@/components/ui/source-badge";
 import { formatDate } from "@/lib/formatDate";
@@ -32,6 +33,8 @@ export function ArticleDetail({ article }: Props) {
         <h1 className="font-display max-w-2xl text-[30px] leading-[1.15] font-bold tracking-[-0.03em] sm:text-[40px]">
           {article.title}
         </h1>
+
+        <ArticleActions article={article} />
 
         <ArticleAudiencePanel summary={article.summary} />
 

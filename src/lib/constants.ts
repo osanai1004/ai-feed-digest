@@ -34,6 +34,52 @@ export const AUDIENCE_VOICE_STORAGE_KEY = "yoyaku-audience-voice";
 /** 初期表示は非エンジニア向け */
 export const DEFAULT_AUDIENCE_VOICE: AudienceVoiceSlug = "general";
 
+/** 詳細ページの要約の深さタブ */
+export const READ_DEPTHS = [
+  { slug: "quick", label: "30秒で読む" },
+  { slug: "deep", label: "詳しく読む" },
+] as const;
+
+export type ReadDepthSlug = (typeof READ_DEPTHS)[number]["slug"];
+
+/** 要約の深さの選択を覚える localStorage キー */
+export const READ_DEPTH_STORAGE_KEY = "yoyaku-read-depth";
+
+/** 初期表示は従来どおり全文（詳しく読む） */
+export const DEFAULT_READ_DEPTH: ReadDepthSlug = "deep";
+
+/** 端末内ライブラリ（保存・既読・ウォッチ）の localStorage キー */
+export const LIBRARY_STORAGE_KEY = "yoyaku-library-v1";
+
+/** 端末内ライブラリのデータ形式バージョン（将来の移行判定用） */
+export const LIBRARY_DATA_VERSION = 1;
+
+/** 端末内に保持する記事エントリ数の上限（超過時は古い既読から削除） */
+export const LIBRARY_MAX_ENTRIES = 500;
+
+/** ウォッチキーワードの登録上限 */
+export const WATCH_KEYWORDS_MAX = 20;
+
+/** ウォッチキーワード1件の最大文字数 */
+export const WATCH_KEYWORD_MAX_LENGTH = 50;
+
+/** 一覧の表示（ライブラリ状態）フィルター */
+export const LIBRARY_STATUS_FILTERS = [
+  { slug: "all", label: "すべて" },
+  { slug: "unread", label: "未読のみ" },
+  { slug: "saved", label: "あとで読む" },
+  { slug: "watched", label: "ウォッチ" },
+] as const;
+
+export type LibraryStatusFilterSlug =
+  (typeof LIBRARY_STATUS_FILTERS)[number]["slug"];
+
+/** ライブラリ状態フィルター時に一度に増やす表示件数 */
+export const LIBRARY_FILTER_PAGE_SIZE = 20;
+
+/** 詳細ページに表示する関連ニュースの最大件数 */
+export const RELATED_ARTICLES_MAX = 4;
+
 /** TOP の大分類（AI / 開発ツール） */
 export const ARTICLE_CATEGORIES = [
   { slug: "ai", label: "AI" },

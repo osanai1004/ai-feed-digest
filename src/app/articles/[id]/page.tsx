@@ -1,7 +1,9 @@
 import { ArticleDetail } from "@/components/article-detail";
+import { RelatedArticles } from "@/components/related-articles";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PillLink } from "@/components/ui/pill-link";
-import { getArticle } from "@/lib/store";
+import { findRelatedArticles } from "@/lib/relatedArticles";
+import { listArticles } from "@/lib/store";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -12,17 +14,25 @@ type Props = {
 
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params;
-  const article = await getArticle(id);
+  const articles = await listArticles();
+  const article = articles.find((a) => a.id === id);
   if (!article) notFound();
+
+  const related = findRelatedArticles(article, articles);
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-6 sm:px-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <PillLink href="/">← 一覧へ</PillLink>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <PillLink href="/library">保存した記事</PillLink>
+          <ThemeToggle />
+        </div>
       </div>
 
       <ArticleDetail article={article} />
+
+      <RelatedArticles articles={related} />
     </main>
   );
 }
