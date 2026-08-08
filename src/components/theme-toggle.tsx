@@ -21,15 +21,13 @@ export function ThemeToggle() {
           : "テーマを切替"
       }
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-[var(--hairline)] bg-[var(--card)] px-2.5 py-2 text-[12px] font-bold text-[var(--ink-soft)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:px-3"
+      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-[var(--hairline)] bg-[var(--card)] px-2.5 py-2 text-[12px] font-bold text-[var(--ink-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] sm:px-3"
     >
       <span
         className="flex h-6 w-11 items-center rounded-full p-0.5 transition"
         style={{
           background:
-            mounted && isDark
-              ? "linear-gradient(90deg, #0ea5a4, #38bdf8)"
-              : "#e2e8f0",
+            mounted && isDark ? "var(--accent)" : "var(--hairline)",
         }}
       >
         <span

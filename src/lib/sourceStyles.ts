@@ -1,10 +1,10 @@
 const PALETTE = [
-  { badge: "rgba(20,184,166,0.18)", text: "#14b8a6", bar: "#14b8a6" },
-  { badge: "rgba(249,115,22,0.18)", text: "#fb923c", bar: "#f97316" },
-  { badge: "rgba(59,130,246,0.18)", text: "#60a5fa", bar: "#3b82f6" },
-  { badge: "rgba(236,72,153,0.18)", text: "#f472b6", bar: "#ec4899" },
-  { badge: "rgba(139,92,246,0.18)", text: "#a78bfa", bar: "#8b5cf6" },
-  { badge: "rgba(132,204,22,0.18)", text: "#a3e635", bar: "#84cc16" },
+  { badge: "rgba(27,100,224,0.12)", text: "#1b64e0", bar: "#1b64e0" },
+  { badge: "rgba(14,116,144,0.14)", text: "#0e7490", bar: "#0e7490" },
+  { badge: "rgba(180,83,9,0.14)", text: "#b45309", bar: "#d97706" },
+  { badge: "rgba(15,118,110,0.14)", text: "#0f766e", bar: "#0f766e" },
+  { badge: "rgba(67,56,202,0.12)", text: "#4338ca", bar: "#4f46e5" },
+  { badge: "rgba(22,101,52,0.14)", text: "#166534", bar: "#15803d" },
 ] as const;
 
 export function styleForSource(source: string) {

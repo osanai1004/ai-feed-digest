@@ -73,11 +73,11 @@ export function ArticleAudiencePanel({ summary }: Props) {
         })}
       </div>
 
-      <section className="ui-panel mt-5 rounded-3xl p-5 sm:p-6">
-        <h2 className="mb-3 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-teal-fg)] uppercase">
+      <section className="ui-panel mt-5 rounded-[var(--radius-card)] border border-[var(--hairline)] p-5 sm:p-6">
+        <h2 className="ui-section-label mb-3 text-[var(--accent-strong)]">
           結論
         </h2>
-        <div className="whitespace-pre-line text-[17px] leading-8 text-[var(--ink-soft)]">
+        <div className="whitespace-pre-line text-[17px] leading-8 text-[var(--ink-soft)] sm:text-[18px]">
           {content.conclusion}
         </div>
       </section>
@@ -98,10 +98,8 @@ export function ArticleAudiencePanel({ summary }: Props) {
       ) : null}
 
       {!quick && hasDetail ? (
-        <section className="ui-panel mt-5 rounded-3xl p-5 sm:p-6">
-          <h2 className="mb-3 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-sky-fg)] uppercase">
-            詳細内容
-          </h2>
+        <section className="ui-panel mt-5 rounded-[var(--radius-card)] border border-[var(--hairline)] p-5 sm:p-6">
+          <h2 className="ui-section-label mb-3">詳細内容</h2>
           <div className="whitespace-pre-line text-[16px] leading-8 text-[var(--ink-soft)]">
             {content.detail}
           </div>
@@ -116,19 +114,17 @@ export function ArticleAudiencePanel({ summary }: Props) {
 
       {!quick ? (
         <section className="mt-6">
-          <h2 className="mb-4 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-orange-fg)] uppercase">
-            使えるシチュエーション
-          </h2>
+          <h2 className="ui-section-label mb-4">使えるシチュエーション</h2>
           <ol className="grid gap-3">
             {content.situations.map((item, index) => (
               <li
                 key={`${voice}-${index}-${item}`}
-                className="flex gap-3 rounded-2xl border border-[var(--hairline)] bg-[var(--canvas)] p-4"
+                className="flex gap-3 border-b border-[var(--hairline)] pb-3 last:border-b-0 last:pb-0"
               >
-                <span className="ui-source-bar flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-extrabold text-white">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[12px] font-extrabold text-[var(--accent-strong)]">
                   {index + 1}
                 </span>
-                <span className="min-w-0 flex-1 break-words pt-1 text-[15px] leading-7 text-[var(--ink-soft)]">
+                <span className="min-w-0 flex-1 break-words pt-0.5 text-[15px] leading-7 text-[var(--ink-soft)]">
                   {item}
                 </span>
               </li>
@@ -139,16 +135,11 @@ export function ArticleAudiencePanel({ summary }: Props) {
 
       {!quick && content.terms.length > 0 ? (
         <section className="mt-6">
-          <h2 className="mb-4 text-[12px] font-extrabold tracking-[0.14em] text-[var(--chip-sky-fg)] uppercase">
-            用語ひとこと
-          </h2>
-          <ul className="grid gap-2">
+          <h2 className="ui-section-label mb-4">用語ひとこと</h2>
+          <ul className="grid gap-3">
             {content.terms.map((item) => (
-              <li
-                key={`${voice}-${item.term}`}
-                className="rounded-2xl border border-[var(--hairline)] bg-[var(--canvas)] px-4 py-3"
-              >
-                <p className="break-words text-[14px] leading-6 text-[var(--ink-soft)]">
+              <li key={`${voice}-${item.term}`}>
+                <p className="break-words text-[14px] leading-7 text-[var(--ink-soft)]">
                   <span className="font-extrabold text-[var(--ink)]">
                     {item.term}
                   </span>

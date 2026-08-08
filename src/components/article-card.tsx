@@ -63,14 +63,14 @@ export function ArticleCard({
 }: Props) {
   return (
     <article
-      className={`ui-card animate-rise group relative overflow-hidden p-5 transition duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-hover)] sm:p-6${read ? " opacity-75" : ""}`}
+      className={`ui-article-row animate-rise group overflow-hidden p-5 sm:p-6${read ? " opacity-70" : ""}`}
       style={{
         ...sourceToneVars(article.source),
-        animationDelay: `${Math.min(index, 6) * 60}ms`,
+        animationDelay: `${Math.min(index, 6) * 55}ms`,
       }}
     >
-      <div className="ui-source-bar absolute inset-y-0 left-0 w-1.5" />
-      <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2 pl-2">
+      <div className="ui-source-bar absolute inset-y-0 left-0 w-1" />
+      <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2 pl-2.5">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <SourceBadge source={article.source} />
           {watchedKeyword ? (
@@ -91,7 +91,7 @@ export function ArticleCard({
           {formatDate(article.publishedAt, "short")}
         </time>
       </div>
-      <h2 className="font-display min-w-0 break-words pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] sm:text-[24px]">
+      <h2 className="font-display min-w-0 break-words pl-2.5 text-[21px] leading-snug font-bold tracking-[-0.025em] sm:text-[24px]">
         <Link
           href={`/articles/${article.id}`}
           className="outline-none transition group-hover:text-[var(--accent-strong)] after:absolute after:inset-0 after:content-[''] focus-visible:text-[var(--accent-strong)]"
@@ -99,10 +99,10 @@ export function ArticleCard({
           {article.title}
         </Link>
       </h2>
-      <p className="mt-3 line-clamp-2 break-words pl-2 text-[14px] leading-6 text-[var(--body)]">
+      <p className="mt-3 line-clamp-2 break-words pl-2.5 text-[14px] leading-7 text-[var(--body)]">
         {toSingleLine(article.summary.general.conclusion)}
       </p>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pl-2">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pl-2.5">
         <div className="relative z-10 flex flex-wrap items-center gap-2">
           <button
             type="button"

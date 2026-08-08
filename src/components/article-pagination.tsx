@@ -107,7 +107,7 @@ export function ArticlePagination({
                 {active ? (
                   <span
                     aria-current="page"
-                    className="inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-gradient-to-r from-teal-500 to-sky-500 px-2 text-[12px] font-extrabold text-white"
+                    className="inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-[var(--accent)] px-2 text-[12px] font-extrabold text-white"
                   >
                     {item}
                   </span>

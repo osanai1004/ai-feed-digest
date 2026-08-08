@@ -141,9 +141,9 @@ export function ArticleListView({ articles, query }: Props) {
 
   return (
     <>
-      <Card soft className="animate-rise mb-5 p-4 sm:p-5">
+      <section className="animate-rise mb-5 rounded-[var(--radius-card)] border border-[var(--hairline)] bg-[var(--card-soft)] p-4 backdrop-blur-sm sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="min-w-0 text-[11px] leading-snug font-extrabold tracking-[0.08em] text-[var(--mute)] uppercase sm:tracking-[0.12em]">
+          <p className="ui-section-label min-w-0 leading-snug">
             表示で絞り込み（この端末の記録）
           </p>
           {ready ? (
@@ -206,9 +206,9 @@ export function ArticleListView({ articles, query }: Props) {
             保存データの管理 →
           </Link>
         </p>
-      </Card>
+      </section>
 
-      <section className="grid gap-4">
+      <section className="grid gap-3 sm:gap-3.5">
         {visibleItems.length === 0 ? (
           status === "all" ? (
             <EmptyArticles />

@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Sans_JP, Zen_Kaku_Gothic_New } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 import "./globals.css";
 
-const display = Space_Grotesk({
+const display = Zen_Kaku_Gothic_New({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["500", "700", "900"],
 });
 
-const ui = Manrope({
+const ui = IBM_Plex_Sans_JP({
   variable: "--font-ui",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
 });
 
 function resolveMetadataBase(): URL {
@@ -50,8 +50,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f7fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
+    { media: "(prefers-color-scheme: light)", color: "#eef3f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1118" },
   ],
   width: "device-width",
   initialScale: 1,

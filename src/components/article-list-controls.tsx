@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Card } from "@/components/ui/card";
 import { SearchField } from "@/components/ui/search-field";
 import { buildListHref } from "@/lib/articleFilters";
 import type { CategorySlug, GenreSlug } from "@/lib/constants";
@@ -56,7 +55,7 @@ export function ArticleListControls({
   const hasFilter = Boolean(q || category || genre);
 
   return (
-    <Card soft className="animate-rise mb-5 p-4 sm:p-5">
+    <section className="animate-rise mb-6 border-y border-[var(--hairline)] py-5">
       <form action="/" method="get" className="flex flex-col gap-3 sm:flex-row">
         {category ? (
           <input type="hidden" name="category" value={category} />
@@ -71,16 +70,14 @@ export function ArticleListControls({
         />
         <button
           type="submit"
-          className="shrink-0 rounded-2xl bg-gradient-to-r from-teal-500 to-sky-500 px-5 py-3 text-[13px] font-extrabold text-white shadow-sm transition hover:brightness-105"
+          className="shrink-0 rounded-2xl bg-[var(--accent)] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm transition hover:brightness-105"
         >
           検索
         </button>
       </form>
 
-      <div className="mt-4">
-        <p className="mb-2 text-[11px] font-extrabold tracking-[0.12em] text-[var(--mute)] uppercase">
-          種別で絞り込み
-        </p>
+      <div className="mt-5">
+        <p className="ui-section-label mb-2">種別で絞り込み</p>
         <div className="flex flex-wrap gap-2">
           <FilterChip href={buildListHref({ q })} active={!category && !genre}>
             すべて
@@ -99,9 +96,7 @@ export function ArticleListControls({
 
       {genres.length > 0 ? (
         <div className="mt-4">
-          <p className="mb-2 text-[11px] font-extrabold tracking-[0.12em] text-[var(--mute)] uppercase">
-            ソースで絞り込み
-          </p>
+          <p className="ui-section-label mb-2">ソースで絞り込み</p>
           <div className="flex flex-wrap gap-2">
             <FilterChip
               href={buildListHref({ q, category: category || undefined })}
@@ -126,7 +121,7 @@ export function ArticleListControls({
         </div>
       ) : null}
 
-      <p className="mt-3 min-w-0 break-words text-[12px] font-semibold text-[var(--body)]">
+      <p className="mt-4 min-w-0 break-words text-[12px] font-semibold text-[var(--body)]">
         {hasFilter
           ? `${totalCount}件中 ${resultCount}件を表示`
           : `${resultCount}件の要約`}
@@ -137,6 +132,6 @@ export function ArticleListControls({
           </span>
         ) : null}
       </p>
-    </Card>
+    </section>
   );
 }

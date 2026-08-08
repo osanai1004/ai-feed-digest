@@ -21,8 +21,8 @@ export default async function ArticlePage({ params }: Props) {
   const related = findRelatedArticles(article, articles);
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-6 sm:px-6">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">
+      <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PillLink href="/">← 一覧へ</PillLink>
         <div className="flex items-center justify-end gap-2 self-end sm:self-auto">
           <PillLink href="/library">保存した記事</PillLink>

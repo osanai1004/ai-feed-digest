@@ -12,22 +12,22 @@ export function RelatedArticles({ articles }: Props) {
   if (articles.length === 0) return null;
 
   return (
-    <section className="animate-rise mt-8" aria-labelledby="related-articles-heading">
+    <section className="animate-rise mt-10" aria-labelledby="related-articles-heading">
       <h2
         id="related-articles-heading"
-        className="font-display text-[20px] font-bold tracking-[-0.02em]"
+        className="font-display text-[22px] font-bold tracking-[-0.02em]"
       >
         関連ニュース
       </h2>
       <p className="mt-1 text-[13px] leading-6 text-[var(--body)]">
         同じテーマ・同じ情報源の記事を新しい順に表示しています。
       </p>
-      <ul className="mt-4 grid gap-3">
+      <ul className="mt-4 divide-y divide-[var(--hairline)] border-y border-[var(--hairline)]">
         {articles.map((article) => (
           <li key={article.id}>
             <Link
               href={`/articles/${article.id}`}
-              className="ui-card group flex flex-col items-start gap-2 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+              className="group flex flex-col items-start gap-2 py-4 transition sm:flex-row sm:items-center sm:justify-between sm:gap-4"
               style={sourceToneVars(article.source)}
             >
               <div className="min-w-0 w-full">

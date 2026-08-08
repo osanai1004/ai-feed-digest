@@ -14,17 +14,22 @@ export const metadata: Metadata = {
 
 export default function LibraryPage() {
   return (
-    <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-6 sm:px-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
+    <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">
+      <div className="mb-7 flex items-center justify-between gap-3">
         <PillLink href="/">← 一覧へ</PillLink>
         <ThemeToggle />
       </div>
 
-      <header className="animate-rise mb-6">
-        <h1 className="font-display text-[28px] leading-tight font-bold tracking-[-0.02em] sm:text-[34px]">
+      <header className="animate-rise mb-7">
+        <p className="ui-section-label mb-2">この端末の記録</p>
+        <h1 className="font-display text-[32px] leading-tight font-black tracking-[-0.03em] sm:text-[40px]">
           保存した記事
         </h1>
-        <p className="mt-2 text-[14px] leading-6 text-[var(--body)]">
+        <div
+          className="animate-accent-draw mt-3 h-[3px] w-12 rounded-full bg-[var(--accent)]"
+          aria-hidden="true"
+        />
+        <p className="mt-4 text-[14px] leading-7 text-[var(--body)]">
           「あとで読む」記事と、既読・ウォッチキーワードをまとめて管理できます。
         </p>
       </header>

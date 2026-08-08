@@ -30,9 +30,14 @@ export function ArticleDetail({ article }: Props) {
           </time>
         </div>
 
-        <h1 className="font-display max-w-2xl break-words text-[28px] leading-[1.15] font-bold tracking-[-0.03em] sm:text-[40px]">
+        <h1 className="font-display max-w-2xl break-words text-[30px] leading-[1.12] font-black tracking-[-0.035em] sm:text-[42px]">
           {article.title}
         </h1>
+
+        <div
+          className="animate-accent-draw mt-4 h-[3px] w-14 rounded-full bg-[var(--accent)]"
+          aria-hidden="true"
+        />
 
         <ArticleActions article={article} />
 

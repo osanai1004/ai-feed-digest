@@ -12,8 +12,8 @@ type Props = {
 
 export function HomeHero({ lastUpdatedAt }: Props) {
   return (
-    <header className="ui-hero animate-rise mb-8 overflow-hidden p-5 sm:p-8">
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <header className="ui-hero animate-fade mb-10 pt-1 sm:mb-12">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/"
           className="flex w-fit items-center gap-2.5 rounded-[12px] outline-offset-2 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
@@ -34,26 +34,36 @@ export function HomeHero({ lastUpdatedAt }: Props) {
           <ThemeToggle />
         </div>
       </div>
-      <h1 className="font-display max-w-xl break-words text-[32px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]">
+
+      <p className="ui-section-label animate-rise mb-3">AI更新を、先に結論だけ</p>
+
+      <h1 className="font-display animate-rise max-w-2xl break-words text-[42px] leading-[1.05] font-black tracking-[-0.04em] sm:text-[64px]">
         <Link
           href="/"
-          className="text-brand-gradient rounded-[8px] outline-offset-4 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+          className="rounded-[8px] outline-offset-4 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
         >
           {APP_NAME}
         </Link>
       </h1>
-      <p className="mt-4 max-w-xl text-[17px] leading-7 text-[var(--body)] sm:text-[18px]">
+
+      <div
+        className="animate-accent-draw mt-4 h-[3px] w-16 rounded-full bg-[var(--accent)]"
+        aria-hidden="true"
+      />
+
+      <p className="animate-rise mt-5 max-w-xl text-[17px] leading-8 text-[var(--body)] sm:text-[18px]">
         {APP_DESCRIPTION_LINES[0]}
         それが『
-        <span className="text-brand-gradient font-display font-bold tracking-[-0.02em]">
+        <span className="font-display font-bold tracking-[-0.02em] text-[var(--ink)]">
           {APP_NAME}
         </span>
         』
         <br />
         {APP_DESCRIPTION_LINES[1]}
       </p>
+
       {lastUpdatedAt ? (
-        <p className="mt-4 text-[13px] text-[var(--mute)]">
+        <p className="animate-rise mt-5 text-[13px] text-[var(--mute)]">
           最終更新{" "}
           <time dateTime={lastUpdatedAt}>
             {formatDate(lastUpdatedAt, "long")}
