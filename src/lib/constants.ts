@@ -3,12 +3,13 @@ export const APP_NAME = "ようやくわかる";
 
 /** ブランド説明の行（ヒーロー表示用） */
 export const APP_DESCRIPTION_LINES = [
-  "長い記事も、要約すればわかる。",
-  "情報のキャッチアップを効率的に。かつ、正確にご案内します。",
+  "公式アプデ、長くて読む気にならない。",
+  "それでも正確さは欲しい。",
+  "だから要約して、",
 ] as const;
 
 /** ブランド説明（OGP / meta 用の1行テキスト） */
-export const APP_DESCRIPTION = `${APP_DESCRIPTION_LINES[0]}それが『${APP_NAME}』${APP_DESCRIPTION_LINES[1]}`;
+export const APP_DESCRIPTION = `${APP_DESCRIPTION_LINES[0]}${APP_DESCRIPTION_LINES[1]}${APP_DESCRIPTION_LINES[2]}『${APP_NAME}』。`;
 
 /** 一覧1ページあたりの記事数 */
 export const ARTICLES_PER_PAGE = 20;

@@ -53,13 +53,14 @@ export function HomeHero({ lastUpdatedAt }: Props) {
 
       <p className="animate-rise mt-5 max-w-xl text-[17px] leading-8 text-[var(--body)] sm:text-[18px]">
         {APP_DESCRIPTION_LINES[0]}
-        それが『
+        <br />
+        {APP_DESCRIPTION_LINES[1]}
+        <br />
+        {APP_DESCRIPTION_LINES[2]}『
         <span className="font-display font-bold tracking-[-0.02em] text-[var(--ink)]">
           {APP_NAME}
         </span>
-        』
-        <br />
-        {APP_DESCRIPTION_LINES[1]}
+        』。
       </p>
 
       {lastUpdatedAt ? (
