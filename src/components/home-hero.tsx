@@ -13,10 +13,10 @@ type Props = {
 export function HomeHero({ lastUpdatedAt }: Props) {
   return (
     <header className="ui-hero animate-rise mb-8 overflow-hidden p-6 sm:p-8">
-      <div className="mb-5 flex items-center justify-between gap-3">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-[12px] outline-offset-2 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+          className="flex w-fit items-center gap-2.5 rounded-[12px] outline-offset-2 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
           aria-label={`${APP_NAME}のトップへ`}
         >
           <Image
@@ -24,12 +24,12 @@ export function HomeHero({ lastUpdatedAt }: Props) {
             alt=""
             width={36}
             height={36}
-            className="size-9 rounded-[10px] shadow-sm"
+            className="size-9 shrink-0 rounded-[10px] shadow-sm"
             priority
           />
           <BrandBadge>更新要約</BrandBadge>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 self-end sm:self-auto">
           <PillLink href="/library">保存した記事</PillLink>
           <ThemeToggle />
         </div>
