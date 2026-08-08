@@ -102,7 +102,10 @@ export function ArticleActions({ article }: Props) {
           onClick={handleToggleSaved}
           className={`ui-action-btn${saved ? " is-active" : ""}`}
         >
-          {saved ? "保存済み（あとで読む）" : "あとで読むに保存"}
+          <span className="sm:hidden">{saved ? "保存済み" : "あとで読む"}</span>
+          <span className="hidden sm:inline">
+            {saved ? "保存済み（あとで読む）" : "あとで読むに保存"}
+          </span>
         </button>
         <button
           type="button"

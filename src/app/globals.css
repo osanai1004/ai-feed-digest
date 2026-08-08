@@ -199,11 +199,14 @@ a {
 
 .ui-chip {
   display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
   align-items: center;
   border-radius: 9999px;
   padding: 0.25rem 0.75rem;
   font-size: 12px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .ui-chip-teal {
@@ -234,7 +237,12 @@ a {
 
 .ui-source-badge {
   display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
   align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-radius: 9999px;
   padding: 0.25rem 0.75rem;
   font-size: 11px;
@@ -317,18 +325,27 @@ a {
 }
 
 .ui-audience-tab {
+  min-width: 0;
   border: 0;
   border-radius: 0.8rem;
   background: transparent;
-  padding: 0.7rem 0.75rem;
-  font-size: 13px;
+  padding: 0.65rem 0.5rem;
+  font-size: 12px;
   font-weight: 800;
+  line-height: 1.25;
   color: var(--mute);
   cursor: pointer;
   transition:
     background 0.15s ease,
     color 0.15s ease,
     transform 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .ui-audience-tab {
+    padding: 0.7rem 0.75rem;
+    font-size: 13px;
+  }
 }
 
 .ui-audience-tab:hover {
@@ -343,7 +360,9 @@ a {
 
 .ui-action-btn {
   display: inline-flex;
+  max-width: 100%;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   border-radius: 9999px;
   border: 1px solid var(--hairline);
@@ -353,6 +372,7 @@ a {
   font-weight: 700;
   color: var(--ink-soft);
   cursor: pointer;
+  white-space: nowrap;
   transition:
     transform 0.15s ease,
     background 0.15s ease,

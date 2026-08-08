@@ -20,6 +20,7 @@ export function SourceBadge({ source, className = "" }: Props) {
 
   return (
     <span
+      title={source}
       className={`ui-source-badge${className ? ` ${className}` : ""}`}
       style={
         {

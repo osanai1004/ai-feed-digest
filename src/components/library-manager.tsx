@@ -132,7 +132,7 @@ export function LibraryManager() {
             <dt className="text-[11px] font-extrabold text-[var(--mute)]">
               最終更新
             </dt>
-            <dd className="mt-1 text-[13px] leading-6 font-bold">
+            <dd className="mt-1 break-words text-[12px] leading-snug font-bold sm:text-[13px] sm:leading-6">
               {ready && data.updatedAt
                 ? formatDate(data.updatedAt, "long")
                 : "–"}
@@ -201,7 +201,7 @@ export function LibraryManager() {
               <p className="mt-2 text-[14px] leading-6 text-[var(--body)]">
                 一覧の記事カードにある「あとで読む」ボタンで保存できます。
               </p>
-              <Link href="/" className="cta-button mt-5">
+              <Link href="/" className="cta-button mt-5 w-full sm:w-auto">
                 記事一覧を見る →
               </Link>
             </Card>
@@ -209,15 +209,15 @@ export function LibraryManager() {
             saved.map((entry) => {
               const externalUrl = safeExternalUrl(entry.sourceUrl);
               return (
-                <Card key={entry.articleId} className="p-4 sm:p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                <Card key={entry.articleId} className="min-w-0 overflow-hidden p-4 sm:p-5">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                     <SourceBadge source={entry.source} />
-                    <p className="text-[11px] font-semibold text-[var(--mute)]">
+                    <p className="shrink-0 text-[11px] font-semibold text-[var(--mute)]">
                       保存:{" "}
-                      {entry.savedAt ? formatDate(entry.savedAt, "long") : "–"}
+                      {entry.savedAt ? formatDate(entry.savedAt, "short") : "–"}
                     </p>
                   </div>
-                  <h3 className="mt-2 text-[16px] leading-6 font-bold">
+                  <h3 className="mt-2 min-w-0 break-words text-[16px] leading-6 font-bold">
                     <Link
                       href={`/articles/${entry.articleId}`}
                       className="transition hover:text-[var(--accent-strong)]"

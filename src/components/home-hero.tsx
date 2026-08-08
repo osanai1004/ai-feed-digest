@@ -12,7 +12,7 @@ type Props = {
 
 export function HomeHero({ lastUpdatedAt }: Props) {
   return (
-    <header className="ui-hero animate-rise mb-8 overflow-hidden p-6 sm:p-8">
+    <header className="ui-hero animate-rise mb-8 overflow-hidden p-5 sm:p-8">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/"
@@ -29,12 +29,12 @@ export function HomeHero({ lastUpdatedAt }: Props) {
           />
           <BrandBadge>更新要約</BrandBadge>
         </Link>
-        <div className="flex items-center justify-end gap-2 self-end sm:self-auto">
+        <div className="flex max-w-full flex-wrap items-center justify-end gap-2 self-end sm:self-auto">
           <PillLink href="/library">保存した記事</PillLink>
           <ThemeToggle />
         </div>
       </div>
-      <h1 className="font-display max-w-xl text-[34px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]">
+      <h1 className="font-display max-w-xl break-words text-[32px] leading-[1.08] font-bold tracking-[-0.03em] sm:text-[44px]">
         <Link
           href="/"
           className="text-brand-gradient rounded-[8px] outline-offset-4 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"

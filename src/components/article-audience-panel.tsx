@@ -128,7 +128,7 @@ export function ArticleAudiencePanel({ summary }: Props) {
                 <span className="ui-source-bar flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-extrabold text-white">
                   {index + 1}
                 </span>
-                <span className="pt-1 text-[15px] leading-7 text-[var(--ink-soft)]">
+                <span className="min-w-0 flex-1 break-words pt-1 text-[15px] leading-7 text-[var(--ink-soft)]">
                   {item}
                 </span>
               </li>
@@ -148,7 +148,7 @@ export function ArticleAudiencePanel({ summary }: Props) {
                 key={`${voice}-${item.term}`}
                 className="rounded-2xl border border-[var(--hairline)] bg-[var(--canvas)] px-4 py-3"
               >
-                <p className="text-[14px] leading-6 text-[var(--ink-soft)]">
+                <p className="break-words text-[14px] leading-6 text-[var(--ink-soft)]">
                   <span className="font-extrabold text-[var(--ink)]">
                     {item.term}
                   </span>

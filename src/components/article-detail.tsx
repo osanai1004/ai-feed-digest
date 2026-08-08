@@ -19,18 +19,18 @@ export function ArticleDetail({ article }: Props) {
       style={sourceToneVars(article.source)}
     >
       <div className="ui-source-topbar" />
-      <div className="p-6 sm:p-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="p-5 sm:p-8">
+        <div className="mb-4 flex min-w-0 flex-wrap items-center gap-3">
           <SourceBadge source={article.source} />
           <time
             dateTime={article.publishedAt}
-            className="text-[12px] font-semibold text-[var(--mute)]"
+            className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
           >
             {formatDate(article.publishedAt, "long")}
           </time>
         </div>
 
-        <h1 className="font-display max-w-2xl text-[30px] leading-[1.15] font-bold tracking-[-0.03em] sm:text-[40px]">
+        <h1 className="font-display max-w-2xl break-words text-[28px] leading-[1.15] font-bold tracking-[-0.03em] sm:text-[40px]">
           {article.title}
         </h1>
 
@@ -44,7 +44,7 @@ export function ArticleDetail({ article }: Props) {
               href={externalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="cta-button"
+              className="cta-button w-full sm:w-auto"
             >
               元記事で詳細を確認する →
             </a>

@@ -126,12 +126,12 @@ export function ArticleListControls({
         </div>
       ) : null}
 
-      <p className="mt-3 text-[12px] font-semibold text-[var(--body)]">
+      <p className="mt-3 min-w-0 break-words text-[12px] font-semibold text-[var(--body)]">
         {hasFilter
           ? `${totalCount}件中 ${resultCount}件を表示`
           : `${resultCount}件の要約`}
         {q ? (
-          <span className="text-[var(--mute)]">
+          <span className="break-all text-[var(--mute)]">
             {" "}
             / 「{q}」
           </span>

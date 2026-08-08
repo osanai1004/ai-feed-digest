@@ -70,22 +70,28 @@ export function ArticleCard({
       }}
     >
       <div className="ui-source-bar absolute inset-y-0 left-0 w-1.5" />
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 pl-2">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2 pl-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <SourceBadge source={article.source} />
           {watchedKeyword ? (
-            <Chip tone="orange">ウォッチ: {watchedKeyword}</Chip>
+            <Chip
+              tone="orange"
+              className="max-w-full truncate"
+              title={`ウォッチ: ${watchedKeyword}`}
+            >
+              ウォッチ: {watchedKeyword}
+            </Chip>
           ) : null}
           {read ? <Chip tone="soft">既読</Chip> : null}
         </div>
         <time
           dateTime={article.publishedAt}
-          className="text-[12px] font-semibold text-[var(--mute)]"
+          className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
         >
           {formatDate(article.publishedAt, "short")}
         </time>
       </div>
-      <h2 className="font-display pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] sm:text-[24px]">
+      <h2 className="font-display min-w-0 break-words pl-2 text-[22px] leading-snug font-bold tracking-[-0.02em] sm:text-[24px]">
         <Link
           href={`/articles/${article.id}`}
           className="outline-none transition group-hover:text-[var(--accent-strong)] after:absolute after:inset-0 after:content-[''] focus-visible:text-[var(--accent-strong)]"
@@ -93,7 +99,7 @@ export function ArticleCard({
           {article.title}
         </Link>
       </h2>
-      <p className="mt-3 line-clamp-2 pl-2 text-[14px] leading-6 text-[var(--body)]">
+      <p className="mt-3 line-clamp-2 break-words pl-2 text-[14px] leading-6 text-[var(--body)]">
         {toSingleLine(article.summary.general.conclusion)}
       </p>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pl-2">

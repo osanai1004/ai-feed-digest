@@ -143,7 +143,7 @@ export function ArticleListView({ articles, query }: Props) {
     <>
       <Card soft className="animate-rise mb-5 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[11px] font-extrabold tracking-[0.12em] text-[var(--mute)] uppercase">
+          <p className="min-w-0 text-[11px] leading-snug font-extrabold tracking-[0.08em] text-[var(--mute)] uppercase sm:tracking-[0.12em]">
             表示で絞り込み（この端末の記録）
           </p>
           {ready ? (

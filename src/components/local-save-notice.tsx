@@ -19,7 +19,7 @@ export function LocalSaveNotice({ open, onClose }: Props) {
       role="dialog"
       aria-modal="false"
       aria-labelledby="local-save-notice-title"
-      className="animate-rise fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl"
+      className="animate-rise fixed inset-x-4 bottom-4 z-50 mx-auto max-w-xl pb-[max(0px,env(safe-area-inset-bottom))]"
     >
       <div className="ui-card p-5 shadow-[var(--shadow-hover)] sm:p-6">
         <h2
@@ -35,13 +35,17 @@ export function LocalSaveNotice({ open, onClose }: Props) {
           </li>
           <li>・重要な記事は、原文URLのブックマークも併用してください。</li>
         </ul>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={onClose} className="cta-button">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <button
+            type="button"
+            onClick={onClose}
+            className="cta-button w-full sm:w-auto"
+          >
             わかりました
           </button>
           <Link
             href="/library"
-            className="text-[13px] font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+            className="text-center text-[13px] font-bold text-[var(--accent)] underline-offset-4 hover:underline sm:text-left"
             onClick={onClose}
           >
             バックアップと保存データの管理 →

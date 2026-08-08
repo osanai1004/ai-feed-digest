@@ -14,11 +14,20 @@ type Props = {
   tone?: ChipTone;
   children: ReactNode;
   className?: string;
+  title?: string;
 };
 
-export function Chip({ tone = "soft", children, className = "" }: Props) {
+export function Chip({
+  tone = "soft",
+  children,
+  className = "",
+  title,
+}: Props) {
   return (
-    <span className={`${TONE_CLASS[tone]}${className ? ` ${className}` : ""}`}>
+    <span
+      title={title}
+      className={`${TONE_CLASS[tone]}${className ? ` ${className}` : ""}`}
+    >
       {children}
     </span>
   );

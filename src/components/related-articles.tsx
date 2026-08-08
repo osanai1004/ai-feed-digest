@@ -27,18 +27,26 @@ export function RelatedArticles({ articles }: Props) {
           <li key={article.id}>
             <Link
               href={`/articles/${article.id}`}
-              className="ui-card group flex items-center justify-between gap-4 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)]"
+              className="ui-card group flex flex-col items-start gap-2 p-4 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] sm:flex-row sm:items-center sm:justify-between sm:gap-4"
               style={sourceToneVars(article.source)}
             >
-              <div className="min-w-0">
-                <SourceBadge source={article.source} />
-                <h3 className="mt-2 truncate text-[15px] leading-6 font-bold transition group-hover:text-[var(--accent-strong)]">
+              <div className="min-w-0 w-full">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <SourceBadge source={article.source} />
+                  <time
+                    dateTime={article.publishedAt}
+                    className="shrink-0 text-[12px] font-semibold text-[var(--mute)] sm:hidden"
+                  >
+                    {formatDate(article.publishedAt, "short")}
+                  </time>
+                </div>
+                <h3 className="mt-2 break-words text-[15px] leading-6 font-bold transition group-hover:text-[var(--accent-strong)] sm:truncate">
                   {article.title}
                 </h3>
               </div>
               <time
                 dateTime={article.publishedAt}
-                className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
+                className="hidden shrink-0 text-[12px] font-semibold text-[var(--mute)] sm:block"
               >
                 {formatDate(article.publishedAt, "short")}
               </time>

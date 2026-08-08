@@ -32,7 +32,7 @@ export default async function HomePage({ searchParams }: Props) {
   const filtered = filterArticles(articles, query);
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-8 sm:px-6">
+    <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-20 pt-6 sm:px-6">
       <HomeHero lastUpdatedAt={latestCreatedAt(articles)} />
 
       <ArticleListControls

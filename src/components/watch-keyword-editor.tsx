@@ -64,14 +64,17 @@ export function WatchKeywordEditor({ keywords }: Props) {
       {keywords.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
           {keywords.map((keyword) => (
-            <li key={keyword}>
-              <span className="ui-chip ui-chip-orange gap-1.5">
-                {keyword}
+            <li key={keyword} className="max-w-full">
+              <span
+                title={keyword}
+                className="ui-chip ui-chip-orange max-w-[min(100%,20rem)] gap-1.5 overflow-hidden"
+              >
+                <span className="min-w-0 truncate">{keyword}</span>
                 <button
                   type="button"
                   aria-label={`「${keyword}」をウォッチから外す`}
                   onClick={() => libraryActions.removeWatchKeyword(keyword)}
-                  className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[12px] font-extrabold transition hover:bg-[var(--card)]"
+                  className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition hover:bg-[var(--card)]"
                 >
                   ×
                 </button>

@@ -1,0 +1,50 @@
+MOBILE LAYOUT VERIFICATION REPORT
+==================================
+Date: August 8, 2026
+URL: https://yoyaku-wakaru.vercel.app/
+Task: Verify 2-row mobile header layout
+
+TEST CONDITIONS:
+================
+1. Browser: Chrome with DevTools device emulation
+2. Viewports tested: 375px (iPhone SE) and 320px
+3. Hard refresh performed: Yes (Ctrl+Shift+R)
+
+RESULTS:
+========
+
+✅ AT 375PX WIDTH (iPhone SE):
+- Row 1: Logo icon + "更新要約" badge (left-aligned)
+- Row 2: "保存した記事" link + theme toggle + "Light" text (right-aligned)
+- Layout: CORRECTLY showing 2 DIFFERENT ROWS
+- Screenshot: mobile-375px.webp
+
+✅ AT 320PX WIDTH:
+- Row 1: Logo icon + "更新要約" badge (left-aligned)
+- Row 2: "保存した記事" link + theme toggle + "Light" text (right-aligned)
+- Layout: CORRECTLY showing 2 DIFFERENT ROWS
+- Screenshot: mobile-320px.webp
+
+CODE ANALYSIS:
+==============
+File: /workspace/src/components/home-hero.tsx
+Line 16: <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+CSS Classes:
+- flex-col: Forces column (vertical stacking) layout on mobile
+- gap-3: Adds spacing between the two rows
+- sm:flex-row: Switches to horizontal row at 640px+ (sm breakpoint)
+
+The container uses flex-col for mobile, which stacks:
+1. Child 1: Link with logo + "更新要約" badge
+2. Child 2: Div with "保存した記事" + theme toggle (has self-end for right alignment)
+
+CONCLUSION:
+===========
+✅ YES - The 2-row mobile layout IS WORKING CORRECTLY at both 375px and 320px widths.
+✅ YES - "更新要約" and "保存した記事" are on DIFFERENT rows as intended.
+✅ YES - The flexbox flex-col layout is functioning properly.
+
+The design successfully stacks the header controls vertically on mobile devices,
+with the logo/badge on the first row and the saved articles link + theme toggle
+right-aligned on the second row.
