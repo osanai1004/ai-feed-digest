@@ -1,8 +1,7 @@
 import { ArticleActions } from "@/components/article-actions";
-import { XEngagementMeta } from "@/components/x-engagement-meta";
+import { ArticlePublishMeta, XEngagementMeta } from "@/components/x-engagement-meta";
 import { ArticleAudiencePanel } from "@/components/article-audience-panel";
 import { SourceBadge, sourceToneVars, XSignalBadge } from "@/components/ui/source-badge";
-import { formatDate } from "@/lib/formatDate";
 import { safeExternalUrl } from "@/lib/safeUrl";
 import type { Article } from "@/lib/types";
 
@@ -43,12 +42,7 @@ export function ArticleDetail({ article }: Props) {
           {article.origin === "x" && article.source.trim().toLowerCase() !== "x" ? (
             <XSignalBadge />
           ) : null}
-          <time
-            dateTime={article.publishedAt}
-            className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
-          >
-            {formatDate(article.publishedAt, "long")}
-          </time>
+          <ArticlePublishMeta article={article} dateStyle="long" />
         </div>
 
         <h1 className="font-display max-w-2xl break-words text-[30px] leading-[1.12] font-black tracking-[-0.035em] sm:text-[42px]">

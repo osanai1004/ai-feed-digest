@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { XEngagementMeta } from "@/components/x-engagement-meta";
+import { ArticlePublishMeta, XEngagementMeta } from "@/components/x-engagement-meta";
 import { Chip } from "@/components/ui/chip";
 import { SourceBadge, sourceToneVars, XSignalBadge } from "@/components/ui/source-badge";
-import { formatDate } from "@/lib/formatDate";
 import { toSingleLine } from "@/lib/text";
 import type { Article } from "@/lib/types";
 
@@ -98,12 +97,7 @@ export function ArticleCard({
           ) : null}
           {read ? <Chip tone="soft">既読</Chip> : null}
         </div>
-        <time
-          dateTime={article.publishedAt}
-          className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
-        >
-          {formatDate(article.publishedAt, "short")}
-        </time>
+        <ArticlePublishMeta article={article} dateStyle="short" />
       </div>
       <h2 className="font-display min-w-0 break-words pl-2.5 text-[21px] leading-snug font-bold tracking-[-0.025em] sm:text-[24px]">
         <Link
