@@ -5,9 +5,9 @@ import { useMemo, useState } from "react";
 import { ArticleCard } from "@/components/article-card";
 import { ArticlePagination } from "@/components/article-pagination";
 import { EmptyArticles } from "@/components/empty-articles";
+import { EmptyState } from "@/components/ui/empty-state";
 import { LocalSaveNotice } from "@/components/local-save-notice";
 import { WatchKeywordEditor } from "@/components/watch-keyword-editor";
-import { Card } from "@/components/ui/card";
 import {
   articleSearchText,
   paginateArticles,
@@ -221,21 +221,18 @@ export function ArticleListView({ articles, query }: Props) {
           status === "all" ? (
             <EmptyArticles query={query} />
           ) : (
-            <Card className="p-8 text-center">
-              <p className="font-display text-[18px] font-bold">
-                {EMPTY_STATUS_MESSAGES[status].title}
-              </p>
-              <p className="mt-2 text-[14px] leading-6 text-[var(--body)]">
-                {EMPTY_STATUS_MESSAGES[status].body}
-              </p>
+            <EmptyState
+              title={EMPTY_STATUS_MESSAGES[status].title}
+              body={EMPTY_STATUS_MESSAGES[status].body}
+            >
               <button
                 type="button"
                 onClick={() => changeStatus("all")}
-                className="ui-action-btn mt-5"
+                className="ui-action-btn"
               >
                 すべての記事に戻る
               </button>
-            </Card>
+            </EmptyState>
           )
         ) : (
           visibleItems.map((entry, index) => {

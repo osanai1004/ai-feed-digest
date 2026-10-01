@@ -250,6 +250,30 @@ a {
   overflow-wrap: anywhere;
 }
 
+a.ui-chip,
+button.ui-chip {
+  min-height: 2.75rem;
+  padding-block: 0.45rem;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    filter 0.15s ease;
+}
+
+a.ui-chip.ui-chip-soft:hover,
+button.ui-chip.ui-chip-soft:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--hairline));
+  color: var(--accent-strong);
+}
+
+a.ui-chip.ui-chip-brand:hover,
+button.ui-chip.ui-chip-brand:hover {
+  filter: brightness(1.06);
+}
+
 .ui-chip-teal {
   background: var(--chip-teal-bg);
   color: var(--chip-teal-fg);
@@ -374,6 +398,7 @@ a {
 .ui-pill-link {
   display: inline-flex;
   align-items: center;
+  min-height: 2.75rem;
   white-space: nowrap;
   border-radius: 9999px;
   border: 1px solid var(--hairline);
@@ -486,13 +511,14 @@ a {
 .ui-action-btn {
   display: inline-flex;
   max-width: 100%;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
   border-radius: 9999px;
   border: 1px solid var(--hairline);
   background: var(--card);
-  padding: 0.4rem 0.85rem;
+  padding: 0.45rem 0.95rem;
   font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
@@ -539,7 +565,7 @@ a {
 }
 
 .ui-article-row:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 35%, var(--hairline));
   box-shadow: var(--shadow-hover);
 }
@@ -571,10 +597,10 @@ a {
 .filter-accordion-trigger {
   display: flex;
   width: 100%;
-  min-height: 2.75rem;
+  min-height: 3rem;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0;
+  padding: 0.5rem 0;
   border: 0;
   background: transparent;
   color: inherit;
@@ -647,10 +673,54 @@ a {
   padding: 0.75rem 0;
 }
 
+.ui-skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--hairline) 82%, var(--card)) 0%,
+    color-mix(in srgb, var(--card) 78%, var(--hairline)) 45%,
+    color-mix(in srgb, var(--hairline) 82%, var(--card)) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-fade,
+  .animate-accent-draw,
+  .ui-skeleton {
+    animation: none;
+  }
+
+  .ui-article-row,
+  .ui-action-btn,
+  .ui-pill-link,
+  .cta-button,
+  a.ui-chip,
+  button.ui-chip,
   .filter-accordion-panel,
   .filter-accordion-chevron {
     transition: none;
+  }
+
+  .ui-article-row:hover,
+  .ui-action-btn:hover,
+  .ui-pill-link:hover,
+  .cta-button:hover,
+  a.ui-chip:hover,
+  button.ui-chip:hover {
+    transform: none;
+    filter: none;
   }
 }
 

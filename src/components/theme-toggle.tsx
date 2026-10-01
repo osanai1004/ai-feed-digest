@@ -21,7 +21,7 @@ export function ThemeToggle() {
           : "テーマを切替"
       }
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-[var(--hairline)] bg-[var(--card)] px-2.5 py-2 text-[12px] font-bold text-[var(--ink-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] sm:px-3"
+      className="inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-[var(--hairline)] bg-[var(--card)] px-3 text-[12px] font-bold text-[var(--ink-soft)] transition hover:-translate-y-0.5 hover:border-[var(--accent)] motion-reduce:transition-none motion-reduce:hover:transform-none"
     >
       <span
         className="flex h-6 w-11 items-center rounded-full p-0.5 transition"

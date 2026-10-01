@@ -36,8 +36,8 @@ export function ArticleDetail({ article }: Props) {
       style={sourceToneVars(article.source)}
     >
       <div className="ui-source-topbar" />
-      <div className="p-5 sm:p-8">
-        <div className="mb-4 flex min-w-0 flex-wrap items-center gap-3">
+      <div className="p-4 sm:p-7">
+        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2.5">
           <SourceBadge source={article.source} />
           {article.origin === "x" && article.source.trim().toLowerCase() !== "x" ? (
             <XSignalBadge />
@@ -45,7 +45,7 @@ export function ArticleDetail({ article }: Props) {
           <ArticlePublishMeta article={article} dateStyle="long" />
         </div>
 
-        <h1 className="font-display max-w-2xl break-words text-[30px] leading-[1.12] font-black tracking-[-0.035em] sm:text-[42px]">
+        <h1 className="font-display max-w-2xl break-words text-[28px] leading-[1.18] font-black tracking-[-0.035em] sm:text-[36px]">
           {article.title}
         </h1>
 
