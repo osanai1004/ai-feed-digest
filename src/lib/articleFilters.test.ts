@@ -1,0 +1,150 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  articleMatchesCategory,
+  articleMatchesGenre,
+  availableCategories,
+  parseArticleListQuery,
+} from "./articleFilters";
+import { ARTICLE_CATEGORIES, ARTICLE_GENRES, type CategorySlug } from "./constants";
+import type { Article } from "./types";
+
+const KEPT_GENRE_SLUGS = [
+  "openai",
+  "claude",
+  "gemini",
+  "cursor",
+  "aws",
+  "laravel",
+  "vercel",
+  "nextjs",
+  "github",
+  "cloudflare",
+  "supabase",
+] as const;
+
+function article(source: string, title: string): Article {
+  return {
+    id: `${source}-${title}`,
+    source,
+    title,
+    url: "https://example.com/post",
+    publishedAt: "2026-10-01T00:00:00.000Z",
+    createdAt: "2026-10-01T00:00:00.000Z",
+    summary: {
+      general: { conclusion: "a", detail: "", situations: ["1", "2", "3"], terms: [] },
+      engineer: { conclusion: "a", detail: "", situations: ["1", "2", "3"], terms: [] },
+    },
+  };
+}
+
+function categoriesOf(item: Article): CategorySlug[] {
+  return ARTICLE_CATEGORIES.filter((category) =>
+    articleMatchesCategory(item, category.slug),
+  ).map((category) => category.slug);
+}
+
+describe("article categories", () => {
+  it("splits the old AI / devtools pair into browseable groups", () => {
+    assert.deepEqual(
+      ARTICLE_CATEGORIES.map((category) => category.slug),
+      [
+        "ai-models",
+        "coding-agents",
+        "cloud-infra",
+        "web-frameworks",
+        "devtools",
+        "security",
+      ],
+    );
+    for (const slug of KEPT_GENRE_SLUGS) {
+      assert.equal(
+        ARTICLE_GENRES.some((genre) => genre.slug === slug),
+        true,
+        slug,
+      );
+    }
+  });
+
+  it("maps vendors onto the new categories", () => {
+    const categoryBySlug = Object.fromEntries(
+      ARTICLE_GENRES.map((genre) => [genre.slug, genre.category]),
+    );
+    assert.equal(categoryBySlug.openai, "ai-models");
+    assert.equal(categoryBySlug.claude, "ai-models");
+    assert.equal(categoryBySlug.gemini, "ai-models");
+    assert.equal(categoryBySlug.aws, "ai-models");
+    assert.equal(categoryBySlug.cursor, "coding-agents");
+    assert.equal(categoryBySlug["claude-code"], "coding-agents");
+    assert.equal(categoryBySlug.copilot, "coding-agents");
+    assert.equal(categoryBySlug.vercel, "cloud-infra");
+    assert.equal(categoryBySlug.cloudflare, "cloud-infra");
+    assert.equal(categoryBySlug.supabase, "cloud-infra");
+    assert.equal(categoryBySlug.laravel, "web-frameworks");
+    assert.equal(categoryBySlug.nextjs, "web-frameworks");
+    assert.equal(categoryBySlug.github, "devtools");
+    assert.equal(categoryBySlug.security, "security");
+  });
+
+  it("keeps Claude Code out of the model bucket", () => {
+    const code = article("Claude Code", "Changelog");
+    assert.deepEqual(categoriesOf(code), ["coding-agents"]);
+    assert.equal(articleMatchesGenre(code, "claude-code"), true);
+    assert.equal(articleMatchesGenre(code, "claude"), false);
+
+    const model = article("Claude", "New model");
+    assert.deepEqual(categoriesOf(model), ["ai-models"]);
+    assert.equal(articleMatchesGenre(model, "claude"), true);
+  });
+
+  it("matches source and title keywords for the other groups", () => {
+    assert.deepEqual(categoriesOf(article("OpenAI", "API update")), ["ai-models"]);
+    assert.deepEqual(categoriesOf(article("Google DeepMind", "Research")), ["ai-models"]);
+    assert.deepEqual(
+      categoriesOf(article("AWS", "Amazon Bedrock tool use")),
+      ["ai-models"],
+    );
+    assert.deepEqual(categoriesOf(article("Cursor Changelog", "Agent")), [
+      "coding-agents",
+    ]);
+    assert.deepEqual(
+      categoriesOf(article("GitHub", "GitHub Copilot agent mode")),
+      ["coding-agents"],
+    );
+    assert.deepEqual(categoriesOf(article("Vercel", "Fluid compute")), ["cloud-infra"]);
+    assert.deepEqual(categoriesOf(article("Supabase", "Postgres")), ["cloud-infra"]);
+    assert.deepEqual(categoriesOf(article("Laravel", "Release")), ["web-frameworks"]);
+    assert.deepEqual(categoriesOf(article("Next.js", "Cache")), ["web-frameworks"]);
+    assert.deepEqual(categoriesOf(article("GitHub Changelog", "Actions")), ["devtools"]);
+  });
+
+  it("lets a security title sit in security without dropping the vendor", () => {
+    const item = article("Cloudflare", "Security update for a CVE");
+    assert.deepEqual(categoriesOf(item).sort(), ["cloud-infra", "security"]);
+    assert.equal(articleMatchesGenre(item, "security"), true);
+    assert.equal(
+      articleMatchesCategory(article("GitHub Changelog", "重大な脆弱性を修正"), "security"),
+      true,
+    );
+  });
+
+  it("ignores the removed ai category and a genre from another group", () => {
+    assert.equal(parseArticleListQuery({ category: "ai" }).category, "");
+    assert.equal(parseArticleListQuery({ category: "ai-models" }).category, "ai-models");
+    assert.equal(parseArticleListQuery({ genre: "openai" }).genre, "openai");
+    const mixed = parseArticleListQuery({
+      category: "web-frameworks",
+      genre: "openai",
+    });
+    assert.equal(mixed.category, "web-frameworks");
+    assert.equal(mixed.genre, "");
+  });
+
+  it("lists only categories that have a matching article", () => {
+    const slugs = availableCategories([
+      article("OpenAI", "News"),
+      article("Laravel", "Vite"),
+    ]).map((category) => category.slug);
+    assert.deepEqual(slugs, ["ai-models", "web-frameworks"]);
+  });
+});

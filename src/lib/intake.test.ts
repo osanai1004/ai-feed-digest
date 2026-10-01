@@ -37,6 +37,8 @@ describe("coarse filter", () => {
     assert.equal(coarseFilterText("hi"), "too_short");
     assert.equal(coarseFilterText("今日のランチはカレーでした。とてもおいしい。"), "topic_miss");
     assert.equal(coarseFilterText("Claude の新しいモデルが公開された、という投稿です"), null);
+    assert.equal(coarseFilterText("GitHub Copilot のエージェントが更新された、という話"), null);
+    assert.equal(coarseFilterText("CVE-2026-1000 の脆弱性が公開されたので確認する"), null);
   });
 });
 

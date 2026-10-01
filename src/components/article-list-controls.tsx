@@ -13,6 +13,7 @@ import {
 type CategoryOption = {
   slug: CategorySlug;
   label: string;
+  hint?: string;
 };
 
 type GenreOption = {
@@ -34,16 +35,19 @@ type Props = {
 function FilterChip({
   href,
   active,
+  title,
   children,
 }: {
   href: string;
   active: boolean;
+  title?: string;
   children: ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className={`ui-chip transition${active ? " ui-chip-brand" : " ui-chip-soft"}`}
+      title={title}
+      className={`ui-chip whitespace-nowrap transition${active ? " ui-chip-brand" : " ui-chip-soft"}`}
     >
       {children}
     </Link>
@@ -129,6 +133,7 @@ export function ArticleListControls({
               key={item.slug}
               href={listHref({ category: item.slug, window })}
               active={category === item.slug && !genre}
+              title={item.hint}
             >
               {item.label}
             </FilterChip>

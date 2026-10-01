@@ -75,23 +75,53 @@ export function articleSearchText(article: Article): string {
     .toLowerCase();
 }
 
+function genreHaystack(article: Article): string {
+  return `${article.source}\n${article.title}`.toLowerCase();
+}
+
+/**
+ * ソース名とタイトルが一致したジャンル。
+ * 「claude code」のように長い語が短い語（claude）を含むときは、長い語のジャンルだけ残す。
+ * 互いを含まない語（Cloudflare と security など）は両方残る。
+ */
+function genresMatchingArticle(article: Article) {
+  const haystack = genreHaystack(article);
+  const hits = ARTICLE_GENRES.map((genre) => ({
+    genre,
+    keywords: genre.keywords.filter((keyword) => haystack.includes(keyword)),
+  })).filter((hit) => hit.keywords.length > 0);
+
+  return hits
+    .filter((hit) =>
+      hit.keywords.some(
+        (keyword) =>
+          !hits.some(
+            (other) =>
+              other.genre.slug !== hit.genre.slug &&
+              other.keywords.some(
+                (otherKeyword) =>
+                  otherKeyword.length > keyword.length &&
+                  otherKeyword.includes(keyword),
+              ),
+          ),
+      ),
+    )
+    .map((hit) => hit.genre);
+}
+
 export function articleMatchesGenre(
   article: Article,
   genreSlug: GenreSlug,
 ): boolean {
-  const genre = ARTICLE_GENRES.find((g) => g.slug === genreSlug);
-  if (!genre) return false;
-
-  const haystack = `${article.source}\n${article.title}`.toLowerCase();
-  return genre.keywords.some((keyword) => haystack.includes(keyword));
+  return genresMatchingArticle(article).some((genre) => genre.slug === genreSlug);
 }
 
 export function articleMatchesCategory(
   article: Article,
   categorySlug: CategorySlug,
 ): boolean {
-  return ARTICLE_GENRES.filter((genre) => genre.category === categorySlug).some(
-    (genre) => articleMatchesGenre(article, genre.slug),
+  return genresMatchingArticle(article).some(
+    (genre) => genre.category === categorySlug,
   );
 }
 
