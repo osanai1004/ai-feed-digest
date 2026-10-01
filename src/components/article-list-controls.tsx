@@ -3,8 +3,11 @@ import type { ReactNode } from "react";
 import { SearchField } from "@/components/ui/search-field";
 import { buildListHref } from "@/lib/articleFilters";
 import {
+  ARTICLE_CHANNELS,
+  DEFAULT_ARTICLE_CHANNEL,
   DEFAULT_LIST_WINDOW,
   LIST_WINDOWS,
+  type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
   type ListWindow,
@@ -23,6 +26,7 @@ type GenreOption = {
 
 type Props = {
   q: string;
+  channel: ArticleChannel;
   category: CategorySlug | "";
   genre: GenreSlug | "";
   window: ListWindow;
@@ -56,6 +60,7 @@ function FilterChip({
 
 export function ArticleListControls({
   q,
+  channel,
   category,
   genre,
   window,
@@ -67,9 +72,23 @@ export function ArticleListControls({
   const hasFilter = Boolean(q || category || genre);
   const windowLabel =
     LIST_WINDOWS.find((item) => item.slug === window)?.label ?? "直近24時間";
-  const listHref = (extra: { category?: string; genre?: string; window?: ListWindow }) =>
+  const channelLabel =
+    ARTICLE_CHANNELS.find((item) => item.slug === channel)?.label ?? "All";
+  const scopeLabel =
+    channel === DEFAULT_ARTICLE_CHANNEL
+      ? windowLabel
+      : window === "all"
+        ? channelLabel
+        : `${channelLabel}・${windowLabel}`;
+  const listHref = (extra: {
+    category?: string;
+    genre?: string;
+    window?: ListWindow;
+    channel?: ArticleChannel;
+  }) =>
     buildListHref({
       q,
+      channel: extra.channel ?? channel,
       category: extra.category,
       genre: extra.genre,
       window: extra.window ?? window,
@@ -78,6 +97,9 @@ export function ArticleListControls({
   return (
     <section className="animate-rise mb-6 border-y border-[var(--hairline)] py-5">
       <form action="/" method="get" className="flex flex-col gap-3 sm:flex-row">
+        {channel !== DEFAULT_ARTICLE_CHANNEL ? (
+          <input type="hidden" name="channel" value={channel} />
+        ) : null}
         {category ? (
           <input type="hidden" name="category" value={category} />
         ) : null}
@@ -99,6 +121,25 @@ export function ArticleListControls({
           検索
         </button>
       </form>
+
+      <div className="mt-5">
+        <p className="ui-section-label mb-2">チャネル</p>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="チャネル">
+          {ARTICLE_CHANNELS.map((item) => (
+            <FilterChip
+              key={item.slug}
+              href={listHref({
+                category: category || undefined,
+                genre: genre || undefined,
+                channel: item.slug,
+              })}
+              active={channel === item.slug}
+            >
+              {item.label}
+            </FilterChip>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-5">
         <p className="ui-section-label mb-2">期間</p>
@@ -169,13 +210,13 @@ export function ArticleListControls({
       ) : null}
 
       <p className="mt-4 min-w-0 break-words text-[12px] font-semibold text-[var(--body)]">
-        {window === "all"
+        {window === "all" && channel === DEFAULT_ARTICLE_CHANNEL
           ? hasFilter
             ? `${totalCount}件中 ${resultCount}件を表示`
             : `${resultCount}件の要約`
           : hasFilter
-            ? `${windowLabel}の ${totalCount}件中 ${resultCount}件を表示`
-            : `${windowLabel}の ${resultCount}件`}
+            ? `${scopeLabel}の ${totalCount}件中 ${resultCount}件を表示`
+            : `${scopeLabel}の ${resultCount}件`}
         {q ? (
           <span className="break-all text-[var(--mute)]">
             {" "}

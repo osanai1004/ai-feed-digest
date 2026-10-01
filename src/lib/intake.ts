@@ -2,6 +2,7 @@ import {
   COARSE_MIN_TEXT_LENGTH,
   COARSE_TOPIC_TERMS,
   INTAKE_MAX_LENGTHS,
+  OFFICIAL_CONFIRMATION_NOTE,
 } from "./constants";
 import { isSafeExternalUrl } from "./safeUrl";
 import type { IntakeAction, IntakeStatus } from "./types";
@@ -89,15 +90,82 @@ export type IntakeDecision = {
   officialUrl: string | null;
 };
 
+export type XIngestEvidence = "official" | "x";
+
+/**
+ * 記事の url と注記。
+ * 公式URLがあればそれを url にする。無ければ X の投稿 URL。
+ * 「公式もこう言っている」は、公式ページの本文が取れたときだけ付ける。
+ */
+export function resolveXIngestSource(input: {
+  officialUrl: string | null;
+  xPostUrl: string;
+  officialText: string;
+}): { url: string; officialNote: string | null; evidence: XIngestEvidence } {
+  const officialUrl = input.officialUrl?.trim() ?? "";
+  const usedOfficial = Boolean(officialUrl && input.officialText.trim());
+  return {
+    url: officialUrl || input.xPostUrl.trim(),
+    officialNote: usedOfficial ? OFFICIAL_CONFIRMATION_NOTE : null,
+    evidence: usedOfficial ? "official" : "x",
+  };
+}
+
+/** X記事の url は公式ページか、その候補の投稿 URL だけ */
+export function isAllowedXArticleUrl(articleUrl: string, xPostUrl: string): boolean {
+  if (isOfficialPrimaryUrl(articleUrl)) return true;
+  const article = canonicalHttpUrl(articleUrl);
+  const post = canonicalHttpUrl(xPostUrl);
+  return Boolean(article && post && article === post);
+}
+
+/**
+ * 承認済み候補と記事 URL が一致するか。
+ * 公式URL付きならそのURL。無ければ投稿URL。
+ */
+export function articleUrlMatchesApprovedSignal(
+  signal: { officialUrl: string | null; xPostUrl: string },
+  articleUrl: string,
+): boolean {
+  const actual = canonicalHttpUrl(articleUrl);
+  if (!actual) return false;
+  if (signal.officialUrl?.trim()) {
+    const expected = canonicalHttpUrl(signal.officialUrl);
+    return Boolean(expected && expected === actual);
+  }
+  const post = canonicalHttpUrl(signal.xPostUrl);
+  return Boolean(post && post === actual);
+}
+
+function readyDecision(input: {
+  officialUrl: string | null;
+  xPostUrl?: string | null;
+}): { ok: true; decision: IntakeDecision } | { ok: false; error: string } {
+  if (input.officialUrl) {
+    return {
+      ok: true,
+      decision: { status: "ready", officialUrl: input.officialUrl },
+    };
+  }
+  if (input.xPostUrl && isXPostUrl(input.xPostUrl)) {
+    return { ok: true, decision: { status: "ready", officialUrl: null } };
+  }
+  return {
+    ok: false,
+    error: "Ready requires an official URL or an X post URL",
+  };
+}
+
 /**
  * 人の操作を次の状態に変える。
- * 公式 URL がある承認・裏取りだけが要約待ち（ready）になる。
- * 公式 URL が無い承認はメモで止め、記事にはしない。
+ * 承認・裏取り解決は要約待ち（ready）にする。
+ * 公式 URL が無くても、X の投稿 URL があれば記事にしてよい。
  */
 export function applyIntakeAction(input: {
   status: IntakeStatus;
   action: IntakeAction;
   officialUrl: string | null;
+  xPostUrl?: string | null;
 }): { ok: true; decision: IntakeDecision } | { ok: false; error: string } {
   const { status, action } = input;
   const officialUrl = input.officialUrl;
@@ -138,10 +206,7 @@ export function applyIntakeAction(input: {
     if (status !== "pending_review") {
       return { ok: false, error: "Approve is only available from pending review" };
     }
-    if (officialUrl) {
-      return { ok: true, decision: { status: "ready", officialUrl } };
-    }
-    return { ok: true, decision: { status: "memo", officialUrl: null } };
+    return readyDecision({ officialUrl, xPostUrl: input.xPostUrl });
   }
 
   if (action === "resolve_factcheck") {
@@ -151,10 +216,7 @@ export function applyIntakeAction(input: {
         error: "Fact-check resolution is only available from needs_factcheck",
       };
     }
-    if (officialUrl) {
-      return { ok: true, decision: { status: "ready", officialUrl } };
-    }
-    return { ok: true, decision: { status: "memo", officialUrl: null } };
+    return readyDecision({ officialUrl, xPostUrl: input.xPostUrl });
   }
 
   return { ok: false, error: "Unknown action" };

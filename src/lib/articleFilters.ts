@@ -1,8 +1,11 @@
 import {
   ARTICLE_CATEGORIES,
+  ARTICLE_CHANNELS,
   ARTICLE_GENRES,
   ARTICLES_PER_PAGE,
+  DEFAULT_ARTICLE_CHANNEL,
   DEFAULT_LIST_WINDOW,
+  type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
   type ListWindow,
@@ -12,6 +15,7 @@ import type { Article } from "./types";
 
 export type ArticleListQuery = {
   q: string;
+  channel: ArticleChannel;
   category: CategorySlug | "";
   genre: GenreSlug | "";
   page: number;
@@ -41,11 +45,29 @@ export function parseArticleListQuery(searchParams: {
     genreMatch && (!category || genreMatch.category === category)
       ? genreMatch.slug
       : "";
+  const channelRaw = (firstParam(searchParams.channel) ?? "")
+    .trim()
+    .toLowerCase();
+  const channel =
+    ARTICLE_CHANNELS.find((item) => item.slug === channelRaw)?.slug ??
+    DEFAULT_ARTICLE_CHANNEL;
   const pageRaw = Number.parseInt(firstParam(searchParams.page) ?? "1", 10);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
   const window = parseListWindow(firstParam(searchParams.window));
 
-  return { q, category, genre, page, window };
+  return { q, channel, category, genre, page, window };
+}
+
+/** 入手元。未設定の origin は公式RSSとして扱う */
+export function filterByChannel(
+  articles: Article[],
+  channel: ArticleChannel,
+): Article[] {
+  if (channel === "all") return articles;
+  if (channel === "x") {
+    return articles.filter((article) => article.origin === "x");
+  }
+  return articles.filter((article) => article.origin !== "x");
 }
 
 export function filterByListWindow(
@@ -191,6 +213,7 @@ export function availableCategories(articles: Article[]) {
 
 export function buildListHref(params: {
   q?: string;
+  channel?: ArticleChannel;
   category?: string;
   genre?: string;
   page?: number;
@@ -199,6 +222,9 @@ export function buildListHref(params: {
   const sp = new URLSearchParams();
   const q = params.q?.trim();
   if (q) sp.set("q", q);
+  if (params.channel && params.channel !== DEFAULT_ARTICLE_CHANNEL) {
+    sp.set("channel", params.channel);
+  }
   if (params.category) sp.set("category", params.category);
   if (params.genre) sp.set("genre", params.genre);
   if (params.window && params.window !== DEFAULT_LIST_WINDOW) {

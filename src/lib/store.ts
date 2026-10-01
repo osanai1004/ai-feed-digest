@@ -2,10 +2,11 @@ import { createHash } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { neon } from "@neondatabase/serverless";
-import { INTAKE_QUEUE_STATUSES, OFFICIAL_CONFIRMATION_NOTE } from "./constants";
+import { INTAKE_QUEUE_STATUSES } from "./constants";
 import { httpError } from "./http";
 import {
   applyIntakeAction,
+  articleUrlMatchesApprovedSignal,
   canonicalHttpUrl,
   canResubmitSignal,
   coarseFilterText,
@@ -286,10 +287,7 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
     createdAt: now,
     origin,
     xPostUrl: origin === "x" ? payload.xPostUrl?.trim() || null : null,
-    officialNote:
-      origin === "x"
-        ? payload.officialNote?.trim() || OFFICIAL_CONFIRMATION_NOTE
-        : null,
+    officialNote: origin === "x" ? payload.officialNote?.trim() || null : null,
   });
 
   if (!hasDatabaseUrl()) {
@@ -610,6 +608,7 @@ export async function decideSignal(input: {
     status: current.status,
     action: input.action,
     officialUrl: input.officialUrl,
+    xPostUrl: current.xPostUrl,
   });
   if (!applied.ok) throw httpError(applied.error, 400);
 
@@ -629,17 +628,18 @@ export async function decideSignal(input: {
 export async function markSignalIngested(
   signalId: string,
   articleId: string,
-  officialUrl: string,
+  articleUrl: string,
 ): Promise<IntakeSignal> {
   const current = await getSignal(signalId);
   if (!current) throw httpError("Signal not found", 404);
 
-  const expected = current.officialUrl
-    ? canonicalHttpUrl(current.officialUrl)
-    : null;
-  const actual = canonicalHttpUrl(officialUrl);
-  if (!expected || !actual || expected !== actual) {
-    throw httpError("Official URL does not match the approved signal", 409);
+  if (!articleUrlMatchesApprovedSignal(current, articleUrl)) {
+    throw httpError(
+      current.officialUrl
+        ? "Official URL does not match the approved signal"
+        : "Article URL must be the approved X post",
+      409,
+    );
   }
 
   if (current.status === "ingested") {

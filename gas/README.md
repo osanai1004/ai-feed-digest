@@ -39,7 +39,7 @@
 | 関数 | 対象 | 用途 |
 |---|---|---|
 | `runOnce` | RSSの**新着だけ** | これから入る記事を2ボイス＋詳細内容付きで取り込む |
-| `ingestReadyXSignals` | 人が承認した **X候補（ready）だけ** | 公式ページを読んで2ボイス要約し、記事にする。Xのページは取りに行かない |
+| `ingestReadyXSignals` | 人が承認した **X候補（ready）だけ** | 公式ページがあればそれを、無ければ投稿本文を読んで2ボイス要約し、記事にする。Xのページは取りに行かない |
 | `backfillDualVoiceArticles` | アプリ内の**既存記事** | 過去記事を2ボイス化し、詳細内容も生成し直す |
 
 任意プロパティ:
@@ -109,11 +109,13 @@ curl -X POST "$APP_BASE_URL/api/intake" \
 2. 確認待ちを見る: `GET /api/intake?status=pending_review`
 3. 浅子が判断する: `POST /api/intake/<id>`
    - 公式URLがある: `{"action":"approve","actor":"asako","officialUrl":"https://openai.com/..."}` → `ready`
-   - 公式URLがない: `{"action":"approve","actor":"asako"}` → メモ（記事にしない）
+   - 公式URLがない（投稿URLはある）: `{"action":"approve","actor":"asako"}` → `ready`。記事URLは投稿URL
    - 裏取りが曖昧: `{"action":"flag_factcheck","actor":"asako","note":"一次情報が見つからない"}`
 4. 龍馬が曖昧なものを返す: `POST /api/intake/<id>`  
    `{"action":"resolve_factcheck","actor":"ryoma","officialUrl":"https://..."}`  
-   URLが無ければメモになります。
-5. `ingestReadyXSignals` を実行する。`ready` だけを公式ページから要約し、既存の2ボイス形式で `/api/ingest` に送ります。毎日なら `createXSignalTrigger` を一度実行します。時刻は JST の **4, 9, 12, 15, 18, 21 時**（プロジェクトのタイムゾーンが Asia/Tokyo であること）。4時は通勤前の6時より前に載せるためです。
+   公式URLが無くても、投稿URLがあれば `ready` になります。
+5. `ingestReadyXSignals` を実行する。`ready` を2ボイス形式で `/api/ingest` に送ります。公式ページの本文が取れればそれを根拠にし、`officialNote` は「公式もこう言っている」です。公式URLが無い、または取得本文が空なら、投稿本文だけで要約し、`officialNote` は付けません。記事URLは `officialUrl || xPostUrl` です。タイトルだけの転記は送りません。毎日なら `createXSignalTrigger` を一度実行します。時刻は JST の **4, 9, 12, 15, 18, 21 時**（プロジェクトのタイムゾーンが Asia/Tokyo であること）。4時は通勤前の6時より前に載せるためです。
+
+`Code.gs` を更新したら、Apps Script のエディタに貼り直して保存してください。貼り直すまで、デプロイ済みのスクリプトは古い規則のままです。
 
 RSS の `runOnce` はこの流れを呼びません。

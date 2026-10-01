@@ -96,6 +96,34 @@ export function isLegacySummary(
   );
 }
 
+function normalizedSummaryText(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/**
+ * general と engineer の結論が、内容を説明する文になっていること。
+ * 空欄と、タイトルだけを写した結論は受け取らない。
+ */
+export function summaryExplainsContent(title: string, summary: unknown): boolean {
+  const titleNorm = normalizedSummaryText(title);
+  const voiceOk = (conclusion: unknown) => {
+    const text = normalizedSummaryText(conclusionToText(conclusion));
+    if (!text || text === "（結論未入力）") return false;
+    if (titleNorm && text === titleNorm) return false;
+    return true;
+  };
+
+  if (isDualSummary(summary)) {
+    const general = summary.general as { conclusion?: unknown };
+    const engineer = summary.engineer as { conclusion?: unknown };
+    return voiceOk(general.conclusion) && voiceOk(engineer.conclusion);
+  }
+  if (isLegacySummary(summary)) {
+    return voiceOk(summary.conclusion);
+  }
+  return false;
+}
+
 export function isDualSummary(summary: unknown): summary is ArticleSummary {
   if (!summary || typeof summary !== "object") return false;
   const s = summary as Record<string, unknown>;

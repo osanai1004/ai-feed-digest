@@ -295,6 +295,7 @@ export function ArticleListView({ articles, query }: Props) {
       {pageResult ? (
         <ArticlePagination
           q={query.q}
+          channel={query.channel}
           category={query.category}
           genre={query.genre}
           window={query.window}

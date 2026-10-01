@@ -81,6 +81,11 @@ export function ArticleCard({
               公式確認
             </Chip>
           ) : null}
+          {article.origin === "x" && !article.officialNote ? (
+            <Chip tone="sky" title="公式ページはなく、Xの投稿本文から要約しています">
+              投稿から要約
+            </Chip>
+          ) : null}
           {watchedKeyword ? (
             <Chip
               tone="orange"

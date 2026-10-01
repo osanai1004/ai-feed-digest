@@ -12,6 +12,23 @@ type Props = {
 export function ArticleDetail({ article }: Props) {
   // 既存データにも不正スキームが混ざり得るため表示側でも防ぐ
   const externalUrl = safeExternalUrl(article.url);
+  const postUrl = safeExternalUrl(article.xPostUrl ?? "");
+  const fromX = article.origin === "x";
+  const confirmedByOfficial = Boolean(fromX && article.officialNote);
+  const summarizedFromPost = fromX && !article.officialNote;
+  const primaryIsPost = Boolean(postUrl && externalUrl === postUrl);
+  const primaryLabel = confirmedByOfficial
+    ? "公式記事で確認する →"
+    : summarizedFromPost
+      ? primaryIsPost
+        ? "Xの投稿を見る →"
+        : "掲載元を開く →"
+      : "元記事で詳細を確認する →";
+  const primaryNote = confirmedByOfficial
+    ? "Xの投稿がきっかけです。内容の裏取りは公式の一次情報でしています。"
+    : summarizedFromPost
+      ? "Xの投稿本文から要約しています。"
+      : "まずカード内の要約で把握。詳しく見たいときだけ公式へ。";
 
   return (
     <article
@@ -48,7 +65,7 @@ export function ArticleDetail({ article }: Props) {
 
         {externalUrl ? (
           <div className="mt-8 border-t border-[var(--hairline)] pt-6">
-            {article.origin === "x" && article.officialNote ? (
+            {confirmedByOfficial ? (
               <p className="mb-3 text-[14px] font-bold text-[var(--ink)]">
                 {article.officialNote}
               </p>
@@ -59,22 +76,18 @@ export function ArticleDetail({ article }: Props) {
               rel="noopener noreferrer"
               className="cta-button w-full sm:w-auto"
             >
-              {article.origin === "x"
-                ? "公式記事で確認する →"
-                : "元記事で詳細を確認する →"}
+              {primaryLabel}
             </a>
             <p className="mt-3 text-[13px] leading-6 text-[var(--body)]">
-              {article.origin === "x"
-                ? "Xの投稿がきっかけです。内容の裏取りは公式の一次情報でしています。"
-                : "まずカード内の要約で把握。詳しく見たいときだけ公式へ。"}
+              {primaryNote}
             </p>
             <p className="mt-2 break-all text-[12px] text-[var(--accent)]">
               {externalUrl}
             </p>
-            {article.origin === "x" && safeExternalUrl(article.xPostUrl ?? "") ? (
+            {fromX && postUrl && !primaryIsPost ? (
               <p className="mt-4 text-[13px] leading-6">
                 <a
-                  href={safeExternalUrl(article.xPostUrl ?? "") ?? undefined}
+                  href={postUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-bold text-[var(--accent)] underline-offset-4 hover:underline"

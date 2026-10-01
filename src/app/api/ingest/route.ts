@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { assertIngestAuthorized } from "@/lib/auth";
 import { INGEST_MAX_LENGTHS } from "@/lib/constants";
 import { readErrorMessage, readErrorStatus } from "@/lib/http";
-import { isOfficialPrimaryUrl, isXPostUrl } from "@/lib/intake";
+import { isAllowedXArticleUrl, isXPostUrl } from "@/lib/intake";
 import { isSafeExternalUrl } from "@/lib/safeUrl";
 import { markSignalIngested, upsertArticle } from "@/lib/store";
-import { isDualSummary, isLegacySummary } from "@/lib/summary";
+import { isDualSummary, isLegacySummary, summaryExplainsContent } from "@/lib/summary";
 import type { IngestPayload } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -45,9 +45,9 @@ function readProvenance(
   }
 
   if (origin !== "x") return null;
-  if (!isOfficialPrimaryUrl(articleUrl)) return null;
   if (!isBoundedString(body.xPostUrl, INGEST_MAX_LENGTHS.xPostUrl)) return null;
   if (!isXPostUrl(body.xPostUrl.trim())) return null;
+  if (!isAllowedXArticleUrl(articleUrl, body.xPostUrl.trim())) return null;
 
   if (typeof body.signalId !== "string" || !SIGNAL_ID.test(body.signalId)) {
     return null;
@@ -88,6 +88,7 @@ function isValidPayload(body: unknown): body is IngestPayload {
       isConclusionField((b.summary.engineer as Record<string, unknown>).conclusion) &&
       Array.isArray((b.summary.engineer as Record<string, unknown>).situations);
   if (!summaryOk) return false;
+  if (!summaryExplainsContent(b.title.trim(), b.summary)) return false;
 
   const provenance = readProvenance(b, b.url.trim());
   if (!provenance) return false;
@@ -102,7 +103,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Invalid payload. Required: source, title, url, summary.general|summary.engineer (or legacy summary.conclusion + situations[]). X articles also need origin=x, an official url, and xPostUrl.",
+            "Invalid payload. Required: source, title, url, and a summary that explains the content (not the title alone). X articles need origin=x, xPostUrl, signalId, and url set to an official page or that X post.",
         },
         { status: 400 },
       );

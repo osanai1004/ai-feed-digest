@@ -4,6 +4,8 @@ import {
   articleMatchesCategory,
   articleMatchesGenre,
   availableCategories,
+  buildListHref,
+  filterByChannel,
   parseArticleListQuery,
 } from "./articleFilters";
 import { ARTICLE_CATEGORIES, ARTICLE_GENRES, type CategorySlug } from "./constants";
@@ -23,7 +25,11 @@ const KEPT_GENRE_SLUGS = [
   "supabase",
 ] as const;
 
-function article(source: string, title: string): Article {
+function article(
+  source: string,
+  title: string,
+  origin?: Article["origin"],
+): Article {
   return {
     id: `${source}-${title}`,
     source,
@@ -31,6 +37,7 @@ function article(source: string, title: string): Article {
     url: "https://example.com/post",
     publishedAt: "2026-10-01T00:00:00.000Z",
     createdAt: "2026-10-01T00:00:00.000Z",
+    origin,
     summary: {
       general: { conclusion: "a", detail: "", situations: ["1", "2", "3"], terms: [] },
       engineer: { conclusion: "a", detail: "", situations: ["1", "2", "3"], terms: [] },
@@ -138,6 +145,31 @@ describe("article categories", () => {
     });
     assert.equal(mixed.category, "web-frameworks");
     assert.equal(mixed.genre, "");
+  });
+
+  it("filters the home list by X or official origin", () => {
+    const x = article("OpenAI", "from x", "x");
+    const rss = article("OpenAI", "from rss");
+    assert.equal(parseArticleListQuery({}).channel, "all");
+    assert.equal(parseArticleListQuery({ channel: "x" }).channel, "x");
+    assert.equal(parseArticleListQuery({ channel: "official" }).channel, "official");
+    assert.equal(parseArticleListQuery({ channel: "sns" }).channel, "all");
+
+    assert.deepEqual(
+      filterByChannel([x, rss], "x").map((item) => item.id),
+      [x.id],
+    );
+    assert.deepEqual(
+      filterByChannel([x, rss], "official").map((item) => item.id),
+      [rss.id],
+    );
+    assert.equal(filterByChannel([x, rss], "all").length, 2);
+    assert.equal(buildListHref({ channel: "all" }), "/");
+    assert.equal(buildListHref({ channel: "x" }), "/?channel=x");
+    assert.equal(
+      buildListHref({ channel: "official", window: "all" }),
+      "/?channel=official&window=all",
+    );
   });
 
   it("lists only categories that have a matching article", () => {
