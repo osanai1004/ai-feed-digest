@@ -18,7 +18,8 @@ ChatGPT / Claude / Gemini などの更新を追いながら、「何が変わっ
 - Gemini による日本語要約（結論 / 用語ひとこと / 使える場面）
 - **非エンジニア向け / エンジニア向け** の2ボイス切替（事実は同じ・言い方だけ変える）
 - **30秒で読む / 詳しく読む** の粒度切替（結論だけ先に読める）
-- ジャンル絞り込み・キーワード検索・ページネーション
+- 一覧の絞り込みは「モデル・API / コーディングAI / 基盤・CDN / フレームワーク / 開発ツール / セキュリティ」。OpenAI や Cursor などのソース名でも絞れる
+- キーワード検索・ページネーション
 - **あとで読む・既読・未読のみ表示**（ログイン不要。この端末のブラウザにのみ保存）
 - **ウォッチキーワード**（登録した語を含む記事に印を付けて絞り込み）
 - 保存データの管理ページ `/library`（JSON エクスポート / インポート / 全削除）
@@ -106,6 +107,7 @@ npx vercel --prod --yes
 4. `runOnce` を手動実行（初回は権限承認）… 新着のみ取り込み
 5. 既存記事を2ボイス化したいときは `backfillDualVoiceArticles`（必要なら複数回）
 6. 毎日自動なら `createDailyTrigger` を実行
+7. X の ready を取り込むなら、Apps Script のタイムゾーンを Asia/Tokyo にして `createXSignalTrigger` を実行（毎日 4 / 9 / 12 / 15 / 18 / 21 時）
 
 監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js / GitHub Changelog / Cloudflare / Supabase / AWS（Machine Learning）
 

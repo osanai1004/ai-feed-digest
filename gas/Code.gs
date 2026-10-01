@@ -13,6 +13,8 @@
  *    - GEMINI_MODEL   : (任意) 既定 gemini-3.5-flash-lite
  * 4. runOnce を手動実行して認可
  * 5. createDailyTrigger を実行
+ * 6. プロジェクトのタイムゾーンを Asia/Tokyo にする
+ * 7. createXSignalTrigger を実行（毎日 4, 9, 12, 15, 18, 21 時）
  *
  * X の投稿はここでは取得しない。
  * 浅子が /api/intake に渡して承認した候補だけ、ingestReadyXSignals が公式ページを要約する。
@@ -306,16 +308,21 @@ function ingestReadyXSignals() {
 }
 
 function createXSignalTrigger() {
+  // Apps Script の atHour はプロジェクトのタイムゾーンで動く。
+  // 通勤前（6時より前）に載せ、日中も鮮度を保つため、タイムゾーンは Asia/Tokyo にすること。
+  var hours = [4, 9, 12, 15, 18, 21];
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === "ingestReadyXSignals") {
       ScriptApp.deleteTrigger(t);
     }
   });
-  ScriptApp.newTrigger("ingestReadyXSignals")
-    .timeBased()
-    .everyDays(1)
-    .atHour(9)
-    .create();
+  hours.forEach(function (hour) {
+    ScriptApp.newTrigger("ingestReadyXSignals")
+      .timeBased()
+      .everyDays(1)
+      .atHour(hour)
+      .create();
+  });
 }
 
 function assertOfficialPageUrl_(url) {

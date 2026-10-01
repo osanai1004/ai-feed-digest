@@ -15,9 +15,11 @@
 
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
-6. **既存記事を2ボイス化／詳細内容を埋め直す**ときは `backfillDualVoiceArticles` を実行  
+6. プロジェクトの設定でタイムゾーンを **Asia/Tokyo** にする。`atHour` はこのタイムゾーンで動く
+7. X の ready を取り込むなら `createXSignalTrigger` を一度実行（毎日 **4 / 9 / 12 / 15 / 18 / 21 時**）。既存の `ingestReadyXSignals` トリガーは消してから作り直す
+8. **既存記事を2ボイス化／詳細内容を埋め直す**ときは `backfillDualVoiceArticles` を実行  
    （`APP_BASE_URL` 必須。1回あたり既定12件。足りなければ再度実行で続きから進む）
-7. 英語タイトル / 結論の `\n` 文字化け直しだけなら `repairExistingArticles`
+9. 英語タイトル / 結論の `\n` 文字化け直しだけなら `repairExistingArticles`
 
 ### 要約フィールド
 
@@ -112,6 +114,6 @@ curl -X POST "$APP_BASE_URL/api/intake" \
 4. 龍馬が曖昧なものを返す: `POST /api/intake/<id>`  
    `{"action":"resolve_factcheck","actor":"ryoma","officialUrl":"https://..."}`  
    URLが無ければメモになります。
-5. `ingestReadyXSignals` を実行する。`ready` だけを公式ページから要約し、既存の2ボイス形式で `/api/ingest` に送ります。毎日なら `createXSignalTrigger`（9時）を一度実行します。
+5. `ingestReadyXSignals` を実行する。`ready` だけを公式ページから要約し、既存の2ボイス形式で `/api/ingest` に送ります。毎日なら `createXSignalTrigger` を一度実行します。時刻は JST の **4, 9, 12, 15, 18, 21 時**（プロジェクトのタイムゾーンが Asia/Tokyo であること）。4時は通勤前の6時より前に載せるためです。
 
 RSS の `runOnce` はこの流れを呼びません。

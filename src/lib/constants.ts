@@ -59,6 +59,7 @@ export const COARSE_TOPIC_TERMS = [
   "next.js",
   "nextjs",
   "github",
+  "copilot",
   "cloudflare",
   "supabase",
   "bedrock",
@@ -66,6 +67,8 @@ export const COARSE_TOPIC_TERMS = [
   "llm",
   "生成ai",
   "人工知能",
+  "cve",
+  "脆弱性",
 ] as const;
 
 /** 公式一次情報で裏が取れた X 記事に付ける注記 */
@@ -158,65 +161,121 @@ export const LIBRARY_FILTER_PAGE_SIZE = 20;
 /** 詳細ページに表示する関連ニュースの最大件数 */
 export const RELATED_ARTICLES_MAX = 4;
 
-/** TOP の大分類（AI / 開発ツール） */
+/**
+ * TOP の大分類。
+ * ラベルは一覧チップ用に短くしてある。hint はホバー時の説明。
+ */
 export const ARTICLE_CATEGORIES = [
-  { slug: "ai", label: "AI" },
-  { slug: "devtools", label: "開発ツール" },
+  {
+    slug: "ai-models",
+    label: "モデル・API",
+    hint: "モデル発表・API（OpenAI / Claude / Gemini / Bedrock）",
+  },
+  {
+    slug: "coding-agents",
+    label: "コーディングAI",
+    hint: "コーディングAI・エージェント（Cursor / Claude Code / Copilot）",
+  },
+  {
+    slug: "cloud-infra",
+    label: "基盤・CDN",
+    hint: "基盤・CDN・DB（Vercel / Cloudflare / Supabase）",
+  },
+  {
+    slug: "web-frameworks",
+    label: "フレームワーク",
+    hint: "フレームワーク（Next.js / Laravel）",
+  },
+  {
+    slug: "devtools",
+    label: "開発ツール",
+    hint: "開発ツール全般（GitHub など）",
+  },
+  {
+    slug: "security",
+    label: "セキュリティ",
+    hint: "セキュリティ更新",
+  },
 ] as const;
 
 export type CategorySlug = (typeof ARTICLE_CATEGORIES)[number]["slug"];
 
 /**
  * ジャンル（ベンダー近似タグ）定義。
- * source 名に含まれる語でグループ化する。
+ * source 名とタイトルに含まれる語でグループ化する。
+ * 既存スラッグ（openai など）は絞り込み URL を壊さないために残す。
  */
 export const ARTICLE_GENRES = [
   {
     slug: "openai",
     label: "OpenAI",
-    category: "ai",
+    category: "ai-models",
     keywords: ["openai", "chatgpt"],
   },
   {
     slug: "claude",
     label: "Claude",
-    category: "ai",
+    category: "ai-models",
     keywords: ["claude", "anthropic"],
   },
   {
     slug: "gemini",
     label: "Gemini",
-    category: "ai",
+    category: "ai-models",
     keywords: ["gemini", "google ai", "deepmind", "google deepmind"],
-  },
-  {
-    slug: "cursor",
-    label: "Cursor",
-    category: "ai",
-    keywords: ["cursor"],
   },
   {
     slug: "aws",
     label: "AWS",
-    category: "ai",
-    keywords: ["aws"],
+    category: "ai-models",
+    keywords: ["aws", "bedrock", "sagemaker"],
   },
   {
-    slug: "laravel",
-    label: "Laravel",
-    category: "devtools",
-    keywords: ["laravel"],
+    slug: "cursor",
+    label: "Cursor",
+    category: "coding-agents",
+    keywords: ["cursor"],
+  },
+  {
+    slug: "claude-code",
+    label: "Claude Code",
+    category: "coding-agents",
+    keywords: ["claude code"],
+  },
+  {
+    slug: "copilot",
+    label: "Copilot",
+    category: "coding-agents",
+    keywords: ["copilot", "github copilot"],
   },
   {
     slug: "vercel",
     label: "Vercel",
-    category: "devtools",
+    category: "cloud-infra",
     keywords: ["vercel"],
+  },
+  {
+    slug: "cloudflare",
+    label: "Cloudflare",
+    category: "cloud-infra",
+    keywords: ["cloudflare"],
+  },
+  {
+    slug: "supabase",
+    label: "Supabase",
+    category: "cloud-infra",
+    keywords: ["supabase"],
+  },
+  {
+    slug: "laravel",
+    label: "Laravel",
+    category: "web-frameworks",
+    keywords: ["laravel"],
   },
   {
     slug: "nextjs",
     label: "Next.js",
-    category: "devtools",
+    category: "web-frameworks",
     keywords: ["next.js", "nextjs"],
   },
   {
@@ -226,17 +285,16 @@ export const ARTICLE_GENRES = [
     keywords: ["github"],
   },
   {
-    slug: "cloudflare",
-    label: "Cloudflare",
-    category: "devtools",
-    keywords: ["cloudflare"],
+    slug: "security",
+    label: "セキュリティ",
+    category: "security",
+    keywords: ["security", "cve", "vulnerability", "脆弱性", "セキュリティ"],
   },
-  {
-    slug: "supabase",
-    label: "Supabase",
-    category: "devtools",
-    keywords: ["supabase"],
-  },
-] as const;
+] as const satisfies readonly {
+  slug: string;
+  label: string;
+  category: CategorySlug;
+  keywords: readonly string[];
+}[];
 
 export type GenreSlug = (typeof ARTICLE_GENRES)[number]["slug"];
