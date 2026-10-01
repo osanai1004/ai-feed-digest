@@ -199,13 +199,14 @@ X 由来の記事は、同じエンドポイントに次を足します。`url` 
 |---|---|---|
 | `approve` + `officialUrl` | 浅子 | `ready`。GAS が公式ページを読んで2ボイス要約する |
 | `approve`（投稿URLあり・公式URLなし） | 浅子 | `ready`。GAS が投稿本文から2ボイス要約し、記事URLは投稿URL |
+| `approve`（`memo`。投稿URLあり、公式URLは任意） | 浅子 | `ready`。確認待ちと同じ条件。メモは自動では動かさない |
 | `flag_factcheck` | 浅子 | `needs_factcheck`。裏取りが曖昧なとき龍馬へ |
 | `resolve_factcheck` + `officialUrl` | 龍馬 | `ready` |
 | `resolve_factcheck`（投稿URLあり・公式URLなし） | 龍馬 | `ready`。要約の根拠は投稿本文 |
 | `reject` | どちらでも | `rejected` |
 | `restore` | 浅子 | `filtered` を確認待ちに戻す |
 
-公式URLも投稿URLも無い承認は受け付けません。公式本文が取れた X 記事には「公式もこう言っている」を出します。投稿だけが根拠の記事は「投稿から要約」と出します。以前のルールで残ったメモは `/memos` に残ります（自動では記事になりません）。
+公式URLも投稿URLも無い承認は受け付けません。公式本文が取れた X 記事には「公式もこう言っている」を出します。投稿だけが根拠の記事は「投稿から要約」と出します。以前のルールで残ったメモは `/memos` に残ります。記事にするには `POST /api/intake/:id` で `action` を `approve` にします。投稿URLがあれば公式URLは空のままでよく、一括では `ready` にしません。
 
 ### `GET /api/articles`
 

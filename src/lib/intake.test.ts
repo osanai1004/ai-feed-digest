@@ -115,6 +115,55 @@ describe("human gate", () => {
     if (fromPost.ok) assert.equal(fromPost.decision.status, "ready");
   });
 
+  it("promotes a memo to ready only when explicitly approved", () => {
+    const fromPost = applyIntakeAction({
+      status: "memo",
+      action: "approve",
+      officialUrl: null,
+      xPostUrl: X_POST,
+    });
+    assert.equal(fromPost.ok, true);
+    if (fromPost.ok) {
+      assert.equal(fromPost.decision.status, "ready");
+      assert.equal(fromPost.decision.officialUrl, null);
+    }
+
+    const withOfficial = applyIntakeAction({
+      status: "memo",
+      action: "approve",
+      officialUrl: "https://openai.com/news",
+      xPostUrl: X_POST,
+    });
+    assert.equal(withOfficial.ok, true);
+    if (withOfficial.ok) {
+      assert.equal(withOfficial.decision.status, "ready");
+      assert.equal(withOfficial.decision.officialUrl, "https://openai.com/news");
+    }
+
+    const missingSource = applyIntakeAction({
+      status: "memo",
+      action: "approve",
+      officialUrl: null,
+    });
+    assert.equal(missingSource.ok, false);
+
+    const notAPost = applyIntakeAction({
+      status: "memo",
+      action: "approve",
+      officialUrl: null,
+      xPostUrl: "https://x.com/openai",
+    });
+    assert.equal(notAPost.ok, false);
+
+    const restored = applyIntakeAction({
+      status: "memo",
+      action: "restore",
+      officialUrl: null,
+      xPostUrl: X_POST,
+    });
+    assert.equal(restored.ok, false);
+  });
+
   it("does not summarize a filtered item until it is restored", () => {
     const direct = applyIntakeAction({
       status: "filtered",
