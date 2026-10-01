@@ -77,7 +77,7 @@ function MetricsUpdatedCue({
 /** 公開日の直後に、指標を最後に書いた時刻だけを並べる */
 export function ArticlePublishMeta({ article, dateStyle }: PublishProps) {
   return (
-    <div className="flex max-w-full flex-wrap items-baseline gap-x-2">
+    <div className="flex max-w-full items-baseline gap-x-2">
       <time
         dateTime={article.publishedAt}
         className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
