@@ -13,8 +13,15 @@ import {
   titleFromPostText,
   type CoarseFilterReason,
 } from "@/lib/intake";
-import { listSignals, saveIncomingSignal, type IncomingSignalDraft, type SignalListFilter } from "@/lib/store";
+import {
+  listSignals,
+  refreshStoredXMetrics,
+  saveIncomingSignal,
+  type IncomingSignalDraft,
+  type SignalListFilter,
+} from "@/lib/store";
 import { INTAKE_STATUSES } from "@/lib/types";
+import { decideMetricRefresh, readXMetricPatch } from "@/lib/xMetrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -83,6 +90,7 @@ function parseDraft(raw: unknown): IncomingSignalDraft {
     title: title ?? titleFromPostText(item.text),
     body: item.text.trim(),
     publishedAt,
+    metrics: readXMetricPatch(item),
   };
 }
 
@@ -114,12 +122,30 @@ export async function POST(request: Request) {
     const body = await request.json();
     const drafts = readItems(body).map(parseDraft);
     const saved = [];
+    let refreshed = 0;
+    const now = new Date();
     for (const draft of drafts) {
       const result = await saveIncomingSignal(draft);
-      const reason = result.signal.filterReason as CoarseFilterReason | null;
+      let signal = result.signal;
+      let metricsUpdated = false;
+      if (result.duplicate) {
+        const decision = decideMetricRefresh({
+          publishedAt: result.signal.publishedAt,
+          patch: draft.metrics,
+          now,
+          refreshedSoFar: refreshed,
+        });
+        if (decision === "refresh") {
+          signal = await refreshStoredXMetrics(result.signal, draft.metrics);
+          refreshed += 1;
+          metricsUpdated = true;
+        }
+      }
+      const reason = signal.filterReason as CoarseFilterReason | null;
       saved.push({
-        ...result.signal,
+        ...signal,
         duplicate: result.duplicate,
+        metricsUpdated,
         filterLabel: reason ? FILTER_REASON_LABELS[reason] : null,
       });
     }

@@ -100,11 +100,15 @@ curl -X POST "$APP_BASE_URL/api/intake" \
         "xPostUrl": "https://x.com/someone/status/123",
         "text": "投稿の本文",
         "source": "OpenAI",
-        "author": "@someone"
+        "author": "@someone",
+        "impressions": 12000,
+        "reposts": 80
       }
     ]
   }'
 ```
+
+`impressions` と `reposts` は任意です。同じ投稿URLをあとから再送すると、公開から14日以内の既存記事は数値だけ更新されます。本文や要約は書き直しません。1回の送信は最大20件です。`Code.gs` はこの更新をしません。
 
 2. 確認待ちを見る: `GET /api/intake?status=pending_review`
 3. 浅子が判断する: `POST /api/intake/<id>`

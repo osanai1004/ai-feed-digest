@@ -7,10 +7,12 @@ import {
   DEFAULT_ARTICLE_CHANNEL,
   DEFAULT_LIST_WINDOW,
   LIST_WINDOWS,
+  X_LIST_SORTS,
   type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
   type ListWindow,
+  type XListSort,
 } from "@/lib/constants";
 
 type CategoryOption = {
@@ -30,6 +32,7 @@ type Props = {
   category: CategorySlug | "";
   genre: GenreSlug | "";
   window: ListWindow;
+  sort: XListSort;
   categories: CategoryOption[];
   genres: GenreOption[];
   resultCount: number;
@@ -64,6 +67,7 @@ export function ArticleListControls({
   category,
   genre,
   window,
+  sort,
   categories,
   genres,
   resultCount,
@@ -85,14 +89,18 @@ export function ArticleListControls({
     genre?: string;
     window?: ListWindow;
     channel?: ArticleChannel;
-  }) =>
-    buildListHref({
+    sort?: XListSort;
+  }) => {
+    const nextChannel = extra.channel ?? channel;
+    return buildListHref({
       q,
-      channel: extra.channel ?? channel,
+      channel: nextChannel,
       category: extra.category,
       genre: extra.genre,
       window: extra.window ?? window,
+      sort: nextChannel === "x" ? (extra.sort ?? sort) : undefined,
     });
+  };
 
   return (
     <section className="animate-rise mb-6 border-y border-[var(--hairline)] py-5">
@@ -106,6 +114,9 @@ export function ArticleListControls({
         {genre ? <input type="hidden" name="genre" value={genre} /> : null}
         {window !== DEFAULT_LIST_WINDOW ? (
           <input type="hidden" name="window" value={window} />
+        ) : null}
+        {channel === "x" && sort !== "latest" ? (
+          <input type="hidden" name="sort" value={sort} />
         ) : null}
         <SearchField
           id="article-search"
@@ -140,6 +151,27 @@ export function ArticleListControls({
           ))}
         </div>
       </div>
+
+      {channel === "x" ? (
+        <div className="mt-5">
+          <p className="ui-section-label mb-2">並び</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Xの並び">
+            {X_LIST_SORTS.map((item) => (
+              <FilterChip
+                key={item.slug}
+                href={listHref({
+                  category: category || undefined,
+                  genre: genre || undefined,
+                  sort: item.slug,
+                })}
+                active={sort === item.slug}
+              >
+                {item.label}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-5">
         <p className="ui-section-label mb-2">期間</p>

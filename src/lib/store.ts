@@ -11,6 +11,16 @@ import {
   canResubmitSignal,
   coarseFilterText,
 } from "./intake";
+import {
+  applyXMetricRefresh,
+  emptyXMetrics,
+  hasXMetricPatch,
+  mergeXMetrics,
+  patchFromCounts,
+  readMetricCount,
+  type XMetricCounts,
+  type XMetricPatch,
+} from "./xMetrics";
 import { SEED_ARTICLES } from "./seed";
 import { normalizeArticleSummary } from "./summary";
 import type {
@@ -67,6 +77,22 @@ async function ensureSchema() {
     ADD COLUMN IF NOT EXISTS official_note TEXT
   `;
   await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS impressions INTEGER
+  `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS reposts INTEGER
+  `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS likes INTEGER
+  `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS metrics_updated_at TIMESTAMPTZ
+  `;
+  await sql`
     CREATE TABLE IF NOT EXISTS intake_signals (
       id TEXT PRIMARY KEY,
       x_post_url TEXT NOT NULL UNIQUE,
@@ -85,6 +111,22 @@ async function ensureSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+  await sql`
+    ALTER TABLE intake_signals
+    ADD COLUMN IF NOT EXISTS impressions INTEGER
+  `;
+  await sql`
+    ALTER TABLE intake_signals
+    ADD COLUMN IF NOT EXISTS reposts INTEGER
+  `;
+  await sql`
+    ALTER TABLE intake_signals
+    ADD COLUMN IF NOT EXISTS likes INTEGER
+  `;
+  await sql`
+    ALTER TABLE intake_signals
+    ADD COLUMN IF NOT EXISTS metrics_updated_at TIMESTAMPTZ
+  `;
 }
 
 function presentArticle(article: Article): Article {
@@ -95,7 +137,17 @@ function presentArticle(article: Article): Article {
     origin: article.origin === "x" ? "x" : "rss",
     xPostUrl: article.xPostUrl?.trim() || null,
     officialNote: article.officialNote?.trim() || null,
+    impressions: readMetricCount(article.impressions) ?? null,
+    reposts: readMetricCount(article.reposts) ?? null,
+    likes: readMetricCount(article.likes) ?? null,
+    metricsUpdatedAt: presentMetricsUpdatedAt(article.metricsUpdatedAt),
   };
+}
+
+function presentMetricsUpdatedAt(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const iso = isoFrom(value, "");
+  return iso || null;
 }
 
 function readLocalArticles(): Article[] {
@@ -162,6 +214,12 @@ function mapArticleRow(row: Record<string, unknown>): Article {
     origin: row.origin === "x" ? "x" : "rss",
     xPostUrl: row.x_post_url ? String(row.x_post_url) : null,
     officialNote: row.official_note ? String(row.official_note) : null,
+    impressions: readMetricCount(row.impressions) ?? null,
+    reposts: readMetricCount(row.reposts) ?? null,
+    likes: readMetricCount(row.likes) ?? null,
+    metricsUpdatedAt: row.metrics_updated_at
+      ? isoFrom(row.metrics_updated_at, "")
+      : null,
   });
 }
 
@@ -186,6 +244,10 @@ function presentSignal(signal: IntakeSignal): IntakeSignal | null {
     factcheckNote: signal.factcheckNote?.trim() || null,
     articleId: signal.articleId?.trim() || null,
     updatedBy: signal.updatedBy?.trim() || null,
+    impressions: readMetricCount(signal.impressions) ?? null,
+    reposts: readMetricCount(signal.reposts) ?? null,
+    likes: readMetricCount(signal.likes) ?? null,
+    metricsUpdatedAt: presentMetricsUpdatedAt(signal.metricsUpdatedAt),
   };
 }
 
@@ -207,6 +269,12 @@ function mapSignalRow(row: Record<string, unknown>): IntakeSignal | null {
     updatedBy: row.updated_by ? String(row.updated_by) : null,
     createdAt,
     updatedAt: isoFrom(row.updated_at ?? row.created_at, createdAt),
+    impressions: readMetricCount(row.impressions) ?? null,
+    reposts: readMetricCount(row.reposts) ?? null,
+    likes: readMetricCount(row.likes) ?? null,
+    metricsUpdatedAt: row.metrics_updated_at
+      ? isoFrom(row.metrics_updated_at, "")
+      : null,
   });
 }
 
@@ -239,7 +307,8 @@ export async function listArticles(): Promise<Article[]> {
   const sql = sqlClient();
   const rows = await sql`
     SELECT id, source, title, url, published_at, conclusion, situations,
-           summary_json, created_at, origin, x_post_url, official_note
+           summary_json, created_at, origin, x_post_url, official_note,
+           impressions, reposts, likes, metrics_updated_at
     FROM articles
     ORDER BY COALESCE(published_at, created_at) DESC
   `;
@@ -262,6 +331,10 @@ function mergeArticle(existing: Article | undefined, incoming: Article): Article
     origin: keepX ? "x" : "rss",
     xPostUrl: incoming.xPostUrl || existing.xPostUrl || null,
     officialNote: incoming.officialNote || existing.officialNote || null,
+    impressions: incoming.impressions ?? existing.impressions ?? null,
+    reposts: incoming.reposts ?? existing.reposts ?? null,
+    likes: incoming.likes ?? existing.likes ?? null,
+    metricsUpdatedAt: incoming.metricsUpdatedAt ?? existing.metricsUpdatedAt ?? null,
     createdAt: existing.createdAt,
   });
 }
@@ -288,6 +361,16 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
     origin,
     xPostUrl: origin === "x" ? payload.xPostUrl?.trim() || null : null,
     officialNote: origin === "x" ? payload.officialNote?.trim() || null : null,
+    impressions: origin === "x" ? (payload.impressions ?? null) : null,
+    reposts: origin === "x" ? (payload.reposts ?? null) : null,
+    likes: origin === "x" ? (payload.likes ?? null) : null,
+    metricsUpdatedAt:
+      origin === "x" &&
+      (payload.impressions != null ||
+        payload.reposts != null ||
+        payload.likes != null)
+        ? now
+        : null,
   });
 
   if (!hasDatabaseUrl()) {
@@ -310,7 +393,8 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
     INSERT INTO articles (
       id, source, title, url, published_at,
       conclusion, situations, summary_json, created_at,
-      origin, x_post_url, official_note
+      origin, x_post_url, official_note,
+      impressions, reposts, likes, metrics_updated_at
     )
     VALUES (
       ${article.id},
@@ -324,7 +408,11 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
       ${article.createdAt},
       ${article.origin ?? "rss"},
       ${article.xPostUrl},
-      ${article.officialNote}
+      ${article.officialNote},
+      ${article.impressions ?? null},
+      ${article.reposts ?? null},
+      ${article.likes ?? null},
+      ${article.metricsUpdatedAt ?? null}
     )
     ON CONFLICT (url) DO UPDATE SET
       source = EXCLUDED.source,
@@ -338,12 +426,17 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
         ELSE 'rss'
       END,
       x_post_url = COALESCE(EXCLUDED.x_post_url, articles.x_post_url),
-      official_note = COALESCE(EXCLUDED.official_note, articles.official_note)
+      official_note = COALESCE(EXCLUDED.official_note, articles.official_note),
+      impressions = COALESCE(EXCLUDED.impressions, articles.impressions),
+      reposts = COALESCE(EXCLUDED.reposts, articles.reposts),
+      likes = COALESCE(EXCLUDED.likes, articles.likes),
+      metrics_updated_at = COALESCE(EXCLUDED.metrics_updated_at, articles.metrics_updated_at)
   `;
 
   const stored = await sql`
     SELECT id, source, title, url, published_at, conclusion, situations,
-           summary_json, created_at, origin, x_post_url, official_note
+           summary_json, created_at, origin, x_post_url, official_note,
+           impressions, reposts, likes, metrics_updated_at
     FROM articles
     WHERE url = ${article.url}
     LIMIT 1
@@ -359,6 +452,7 @@ export type IncomingSignalDraft = {
   body: string;
   author: string | null;
   publishedAt: string;
+  metrics: XMetricPatch;
 };
 
 export type SavedSignal = {
@@ -388,6 +482,17 @@ function buildSignal(
     updatedBy: null,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
+    ...mergeXMetrics(countsOf(existing), draft.metrics, now).metrics,
+  };
+}
+
+function countsOf(signal: IntakeSignal | undefined): XMetricCounts {
+  if (!signal) return emptyXMetrics();
+  return {
+    impressions: signal.impressions,
+    reposts: signal.reposts,
+    likes: signal.likes,
+    metricsUpdatedAt: signal.metricsUpdatedAt,
   };
 }
 
@@ -421,7 +526,7 @@ export async function saveIncomingSignal(
   const rows = await sql`
     SELECT id, x_post_url, source, title, body, author, published_at, status,
            filter_reason, official_url, factcheck_note, article_id, updated_by,
-           created_at, updated_at
+           created_at, updated_at, impressions, reposts, likes, metrics_updated_at
     FROM intake_signals
     WHERE x_post_url = ${xPostUrl}
     LIMIT 1
@@ -438,7 +543,7 @@ export async function saveIncomingSignal(
     INSERT INTO intake_signals (
       id, x_post_url, source, title, body, author, published_at, status,
       filter_reason, official_url, factcheck_note, article_id, updated_by,
-      created_at, updated_at
+      created_at, updated_at, impressions, reposts, likes, metrics_updated_at
     )
     VALUES (
       ${signal.id},
@@ -455,7 +560,11 @@ export async function saveIncomingSignal(
       ${signal.articleId},
       ${signal.updatedBy},
       ${signal.createdAt},
-      ${signal.updatedAt}
+      ${signal.updatedAt},
+      ${signal.impressions},
+      ${signal.reposts},
+      ${signal.likes},
+      ${signal.metricsUpdatedAt}
     )
     ON CONFLICT (x_post_url) DO UPDATE SET
       source = EXCLUDED.source,
@@ -469,13 +578,17 @@ export async function saveIncomingSignal(
       factcheck_note = EXCLUDED.factcheck_note,
       article_id = EXCLUDED.article_id,
       updated_by = EXCLUDED.updated_by,
-      updated_at = EXCLUDED.updated_at
+      updated_at = EXCLUDED.updated_at,
+      impressions = COALESCE(EXCLUDED.impressions, intake_signals.impressions),
+      reposts = COALESCE(EXCLUDED.reposts, intake_signals.reposts),
+      likes = COALESCE(EXCLUDED.likes, intake_signals.likes),
+      metrics_updated_at = COALESCE(EXCLUDED.metrics_updated_at, intake_signals.metrics_updated_at)
     WHERE intake_signals.status IN ('filtered', 'rejected')
   `;
   const storedRows = await sql`
     SELECT id, x_post_url, source, title, body, author, published_at, status,
            filter_reason, official_url, factcheck_note, article_id, updated_by,
-           created_at, updated_at
+           created_at, updated_at, impressions, reposts, likes, metrics_updated_at
     FROM intake_signals
     WHERE x_post_url = ${xPostUrl}
     LIMIT 1
@@ -518,7 +631,7 @@ export async function listSignals(
       ? await sql`
           SELECT id, x_post_url, source, title, body, author, published_at, status,
                  filter_reason, official_url, factcheck_note, article_id, updated_by,
-                 created_at, updated_at
+                 created_at, updated_at, impressions, reposts, likes, metrics_updated_at
           FROM intake_signals
           ORDER BY created_at DESC
         `
@@ -526,7 +639,7 @@ export async function listSignals(
         ? await sql`
             SELECT id, x_post_url, source, title, body, author, published_at, status,
                    filter_reason, official_url, factcheck_note, article_id, updated_by,
-                   created_at, updated_at
+                   created_at, updated_at, impressions, reposts, likes, metrics_updated_at
             FROM intake_signals
             WHERE status IN ('pending_review', 'needs_factcheck', 'ready')
             ORDER BY created_at DESC
@@ -534,7 +647,7 @@ export async function listSignals(
         : await sql`
             SELECT id, x_post_url, source, title, body, author, published_at, status,
                    filter_reason, official_url, factcheck_note, article_id, updated_by,
-                   created_at, updated_at
+                   created_at, updated_at, impressions, reposts, likes, metrics_updated_at
             FROM intake_signals
             WHERE status = ${filter}
             ORDER BY created_at DESC
@@ -558,7 +671,7 @@ export async function getSignal(id: string): Promise<IntakeSignal | null> {
   const rows = await sql`
     SELECT id, x_post_url, source, title, body, author, published_at, status,
            filter_reason, official_url, factcheck_note, article_id, updated_by,
-           created_at, updated_at
+           created_at, updated_at, impressions, reposts, likes, metrics_updated_at
     FROM intake_signals
     WHERE id = ${id}
     LIMIT 1
@@ -613,7 +726,7 @@ export async function decideSignal(input: {
   if (!applied.ok) throw httpError(applied.error, 400);
 
   const now = new Date().toISOString();
-  return writeSignal({
+  const saved = await writeSignal({
     ...current,
     status: applied.decision.status,
     officialUrl: applied.decision.officialUrl,
@@ -623,6 +736,7 @@ export async function decideSignal(input: {
     updatedBy: input.actor,
     updatedAt: now,
   });
+  return saved;
 }
 
 export async function markSignalIngested(
@@ -652,10 +766,144 @@ export async function markSignalIngested(
     throw httpError("Signal is not ready for ingest", 409);
   }
 
-  return writeSignal({
+  const saved = await writeSignal({
     ...current,
     status: "ingested",
     articleId,
     updatedAt: new Date().toISOString(),
   });
+  await writeMatchingArticleMetrics(saved, countsOf(saved));
+  return saved;
+}
+
+/**
+ * 再送された候補の数値だけを、候補と既存のX記事へ書く。
+ * タイトル・本文・要約は変えない。
+ */
+export async function refreshStoredXMetrics(
+  signal: IntakeSignal,
+  patch: XMetricPatch,
+): Promise<IntakeSignal> {
+  const now = new Date().toISOString();
+  const { metrics } = mergeXMetrics(countsOf(signal), patch, now);
+  const next: IntakeSignal = { ...signal, ...metrics };
+  await writeSignalMetrics(next);
+  await writeMatchingArticleMetrics(next, metrics);
+  return next;
+}
+
+async function writeSignalMetrics(signal: IntakeSignal): Promise<void> {
+  if (!hasDatabaseUrl()) {
+    const current = readLocalSignals();
+    writeLocalSignals(
+      current.map((item) =>
+        item.id === signal.id
+          ? {
+              ...item,
+              impressions: signal.impressions,
+              reposts: signal.reposts,
+              likes: signal.likes,
+              metricsUpdatedAt: signal.metricsUpdatedAt,
+            }
+          : item,
+      ),
+    );
+    return;
+  }
+
+  await ensureSchema();
+  const sql = sqlClient();
+  await sql`
+    UPDATE intake_signals SET
+      impressions = ${signal.impressions},
+      reposts = ${signal.reposts},
+      likes = ${signal.likes},
+      metrics_updated_at = ${signal.metricsUpdatedAt}
+    WHERE id = ${signal.id}
+  `;
+}
+
+async function writeMatchingArticleMetrics(
+  signal: IntakeSignal,
+  metrics: XMetricCounts,
+): Promise<void> {
+  const patch = patchFromCounts(metrics);
+  if (!hasXMetricPatch(patch)) return;
+  const nowIso = metrics.metricsUpdatedAt ?? new Date().toISOString();
+
+  if (!hasDatabaseUrl()) {
+    const current = readLocalArticles();
+    const existing = findXArticle(current, signal);
+    if (!existing) return;
+    const refreshed = applyXMetricRefresh(existing, patch, nowIso);
+    if (!refreshed.changed) return;
+    writeLocalArticles(
+      current.map((item) =>
+        item.id === refreshed.article.id ? refreshed.article : item,
+      ),
+    );
+    return;
+  }
+
+  await ensureSchema();
+  const sql = sqlClient();
+  const article = await findXArticleRow(signal);
+  if (!article) return;
+  const refreshed = applyXMetricRefresh(article, patch, nowIso);
+  if (!refreshed.changed) return;
+  await sql`
+    UPDATE articles SET
+      impressions = ${refreshed.article.impressions ?? null},
+      reposts = ${refreshed.article.reposts ?? null},
+      likes = ${refreshed.article.likes ?? null},
+      metrics_updated_at = ${refreshed.article.metricsUpdatedAt ?? null}
+    WHERE id = ${refreshed.article.id}
+  `;
+}
+
+function findXArticle(
+  articles: Article[],
+  signal: Pick<IntakeSignal, "articleId" | "xPostUrl">,
+): Article | undefined {
+  if (signal.articleId) {
+    const byId = articles.find(
+      (item) => item.origin === "x" && item.id === signal.articleId,
+    );
+    if (byId) return byId;
+  }
+  const post = canonicalHttpUrl(signal.xPostUrl);
+  if (!post) return undefined;
+  return articles.find((item) => {
+    if (item.origin !== "x" || !item.xPostUrl) return false;
+    return canonicalHttpUrl(item.xPostUrl) === post;
+  });
+}
+
+async function findXArticleRow(
+  signal: Pick<IntakeSignal, "articleId" | "xPostUrl">,
+): Promise<Article | null> {
+  const sql = sqlClient();
+  if (signal.articleId) {
+    const byId = await sql`
+      SELECT id, source, title, url, published_at, conclusion, situations,
+             summary_json, created_at, origin, x_post_url, official_note,
+             impressions, reposts, likes, metrics_updated_at
+      FROM articles
+      WHERE id = ${signal.articleId} AND origin = 'x'
+      LIMIT 1
+    `;
+    if (byId[0]) return mapArticleRow(byId[0] as Record<string, unknown>);
+  }
+  const post = canonicalHttpUrl(signal.xPostUrl);
+  if (!post) return null;
+  const byPost = await sql`
+    SELECT id, source, title, url, published_at, conclusion, situations,
+           summary_json, created_at, origin, x_post_url, official_note,
+           impressions, reposts, likes, metrics_updated_at
+    FROM articles
+    WHERE origin = 'x' AND x_post_url = ${post}
+    LIMIT 1
+  `;
+  if (!byPost[0]) return null;
+  return mapArticleRow(byPost[0] as Record<string, unknown>);
 }

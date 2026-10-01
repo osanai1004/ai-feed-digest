@@ -10,6 +10,7 @@ import {
   parseArticleListQuery,
 } from "@/lib/articleFilters";
 import { listArticles, listMemos } from "@/lib/store";
+import { sortXChannelArticles } from "@/lib/xMetrics";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,10 @@ export default async function HomePage({ searchParams }: Props) {
   const categories = availableCategories(inChannel);
   const genres = availableGenres(inChannel, query.category);
   const filtered = filterArticles(inChannel, query);
+  const listed =
+    query.channel === "x"
+      ? sortXChannelArticles(filtered, query.sort)
+      : filtered;
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">
@@ -49,13 +54,14 @@ export default async function HomePage({ searchParams }: Props) {
         category={query.category}
         genre={query.genre}
         window={query.window}
+        sort={query.sort}
         categories={categories}
         genres={genres}
         resultCount={filtered.length}
         totalCount={inChannel.length}
       />
 
-      <ArticleListView articles={filtered} query={query} />
+      <ArticleListView articles={listed} query={query} />
     </main>
   );
 }

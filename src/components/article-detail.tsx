@@ -1,4 +1,5 @@
 import { ArticleActions } from "@/components/article-actions";
+import { XEngagementMeta } from "@/components/x-engagement-meta";
 import { ArticleAudiencePanel } from "@/components/article-audience-panel";
 import { SourceBadge, sourceToneVars, XSignalBadge } from "@/components/ui/source-badge";
 import { formatDate } from "@/lib/formatDate";
@@ -53,6 +54,8 @@ export function ArticleDetail({ article }: Props) {
         <h1 className="font-display max-w-2xl break-words text-[30px] leading-[1.12] font-black tracking-[-0.035em] sm:text-[42px]">
           {article.title}
         </h1>
+
+        <XEngagementMeta article={article} className="" />
 
         <div
           className="animate-accent-draw mt-4 h-[3px] w-14 rounded-full bg-[var(--accent)]"
