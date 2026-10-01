@@ -31,7 +31,7 @@ export type ArticleSummary = {
   engineer: AudienceSummary;
 };
 
-/** rss: 公式フィード由来。x: Xの投稿を人が確認し、公式URL付きで記事化したもの */
+/** rss: 公式フィード由来。x: Xの投稿を人が確認して記事化したもの。公式URLが無ければ url は投稿URL */
 export type ArticleOrigin = "rss" | "x";
 
 export type Article = {
@@ -62,7 +62,7 @@ export type IngestPayload = {
   url: string;
   publishedAt?: string;
   summary: ArticleSummary | LegacyArticleSummary;
-  /** 省略時は rss。x のときは url を公式一次情報、xPostUrl を投稿にする */
+  /** 省略時は rss。x のときは url を公式ページ、無ければ xPostUrl と同じ投稿URLにする */
   origin?: ArticleOrigin;
   xPostUrl?: string;
   officialNote?: string;

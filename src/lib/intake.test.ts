@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { parseArticleListQuery } from "./articleFilters";
-import { applyIntakeAction, coarseFilterText, isOfficialPrimaryUrl, isXPostUrl } from "./intake";
+import {
+  applyIntakeAction,
+  articleUrlMatchesApprovedSignal,
+  coarseFilterText,
+  isOfficialPrimaryUrl,
+  isXPostUrl,
+  resolveXIngestSource,
+} from "./intake";
+import { summaryExplainsContent } from "./summary";
 import { isInListWindow } from "./listWindow";
 import { bundleSourceBursts } from "./sourceBurst";
 import type { Article } from "./types";
@@ -42,23 +50,40 @@ describe("coarse filter", () => {
   });
 });
 
+const X_POST = "https://x.com/openai/status/123456";
+
 describe("human gate", () => {
-  it("turns an official URL into ready and the lack of one into a memo", () => {
+  it("turns an approval into ready with or without an official URL", () => {
     const approved = applyIntakeAction({
       status: "pending_review",
       action: "approve",
       officialUrl: "https://openai.com/news",
+      xPostUrl: X_POST,
     });
     assert.equal(approved.ok, true);
-    if (approved.ok) assert.equal(approved.decision.status, "ready");
+    if (approved.ok) {
+      assert.equal(approved.decision.status, "ready");
+      assert.equal(approved.decision.officialUrl, "https://openai.com/news");
+    }
 
-    const memo = applyIntakeAction({
+    const fromPost = applyIntakeAction({
+      status: "pending_review",
+      action: "approve",
+      officialUrl: null,
+      xPostUrl: X_POST,
+    });
+    assert.equal(fromPost.ok, true);
+    if (fromPost.ok) {
+      assert.equal(fromPost.decision.status, "ready");
+      assert.equal(fromPost.decision.officialUrl, null);
+    }
+
+    const missingSource = applyIntakeAction({
       status: "pending_review",
       action: "approve",
       officialUrl: null,
     });
-    assert.equal(memo.ok, true);
-    if (memo.ok) assert.equal(memo.decision.status, "memo");
+    assert.equal(missingSource.ok, false);
   });
 
   it("lets 龍馬 resolve an ambiguous fact-check", () => {
@@ -75,9 +100,19 @@ describe("human gate", () => {
       status: "needs_factcheck",
       action: "resolve_factcheck",
       officialUrl: "https://www.anthropic.com/news/claude",
+      xPostUrl: X_POST,
     });
     assert.equal(resolved.ok, true);
     if (resolved.ok) assert.equal(resolved.decision.status, "ready");
+
+    const fromPost = applyIntakeAction({
+      status: "needs_factcheck",
+      action: "resolve_factcheck",
+      officialUrl: null,
+      xPostUrl: X_POST,
+    });
+    assert.equal(fromPost.ok, true);
+    if (fromPost.ok) assert.equal(fromPost.decision.status, "ready");
   });
 
   it("does not summarize a filtered item until it is restored", () => {
@@ -94,6 +129,79 @@ describe("human gate", () => {
     });
     assert.equal(restored.ok, true);
     if (restored.ok) assert.equal(restored.decision.status, "pending_review");
+  });
+});
+
+describe("X ingest fallback", () => {
+  it("uses the X post URL when the official page is missing or empty", () => {
+    const missing = resolveXIngestSource({
+      officialUrl: null,
+      xPostUrl: X_POST,
+      officialText: "",
+    });
+    assert.equal(missing.url, X_POST);
+    assert.equal(missing.officialNote, null);
+    assert.equal(missing.evidence, "x");
+
+    const emptyPage = resolveXIngestSource({
+      officialUrl: "https://openai.com/news",
+      xPostUrl: X_POST,
+      officialText: "  ",
+    });
+    assert.equal(emptyPage.url, "https://openai.com/news");
+    assert.equal(emptyPage.officialNote, null);
+    assert.equal(emptyPage.evidence, "x");
+
+    assert.equal(
+      articleUrlMatchesApprovedSignal(
+        { officialUrl: null, xPostUrl: X_POST },
+        X_POST,
+      ),
+      true,
+    );
+    assert.equal(
+      articleUrlMatchesApprovedSignal(
+        { officialUrl: null, xPostUrl: X_POST },
+        "https://openai.com/news",
+      ),
+      false,
+    );
+  });
+
+  it("keeps the official URL and note when the page text exists", () => {
+    const resolved = resolveXIngestSource({
+      officialUrl: "https://openai.com/news",
+      xPostUrl: X_POST,
+      officialText: "We shipped a longer context window.",
+    });
+    assert.equal(resolved.url, "https://openai.com/news");
+    assert.equal(resolved.officialNote, "公式もこう言っている");
+    assert.equal(resolved.evidence, "official");
+    assert.equal(
+      articleUrlMatchesApprovedSignal(
+        { officialUrl: "https://openai.com/news/", xPostUrl: X_POST },
+        "https://openai.com/news",
+      ),
+      true,
+    );
+  });
+
+  it("rejects a summary that only repeats the title", () => {
+    const title = "新しいモデル";
+    assert.equal(
+      summaryExplainsContent(title, {
+        general: { conclusion: title, situations: ["a"] },
+        engineer: { conclusion: "APIの入力上限が伸びた。", situations: ["a"] },
+      }),
+      false,
+    );
+    assert.equal(
+      summaryExplainsContent(title, {
+        general: { conclusion: "長い作業の途中忘れが減った、と投稿にある。", situations: ["a"] },
+        engineer: { conclusion: "長文コンテキストの脱落が減ったという報告。", situations: ["a"] },
+      }),
+      true,
+    );
   });
 });
 

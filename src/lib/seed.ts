@@ -12,6 +12,9 @@ type SeedInput = {
   /** 省略時は両ボイスに同じ内容を展開 */
   summary?: ArticleSummary;
   terms?: ArticleTerm[];
+  origin?: Article["origin"];
+  xPostUrl?: string | null;
+  officialNote?: string | null;
 };
 
 function seedArticle(input: SeedInput): Article {
@@ -27,11 +30,61 @@ function seedArticle(input: SeedInput): Article {
     publishedAt: input.publishedAt,
     summary: normalizeArticleSummary(summary),
     createdAt: input.publishedAt,
+    origin: input.origin,
+    xPostUrl: input.xPostUrl,
+    officialNote: input.officialNote,
   };
 }
 
 /** DB未接続時でも画面確認できるサンプル（ページネーション確認用に21件以上） */
 export const SEED_ARTICLES: Article[] = [
+  seedArticle({
+    id: "seed-x-post-only",
+    source: "OpenAI",
+    title: "（サンプル）Xの投稿から拾ったモデル更新",
+    url: "https://x.com/openai/status/1234567890",
+    publishedAt: "2026-08-02T00:00:00.000Z",
+    conclusion: "",
+    situations: ["", "", ""],
+    origin: "x",
+    xPostUrl: "https://x.com/openai/status/1234567890",
+    summary: {
+      general: {
+        conclusion:
+          "Xの投稿では、新しいモデルがより長い作業を途中で忘れにくくなったと書かれています。\n公式ページが無いので、この要約は投稿本文だけが根拠です。\n仕事で使う前に、投稿の全文を開いて対象を確認してください。",
+        detail:
+          "投稿は、長い指示を渡したときの途中忘れが減った、という体験談です。\n料金や提供範囲は投稿に書かれていないので、ここには入れていません。\n社内共有するときは、投稿のURLを添えて『未確認の一次情報』と分かるようにしてください。",
+        situations: [
+          "朝、Xで流れてきた更新を短く把握したいとき",
+          "公式発表の前に、話題の中身だけ先に知りたいとき",
+          "投稿の要約をチームへ転送するとき",
+        ],
+        terms: [
+          {
+            term: "投稿",
+            plain: "Xに書かれた本文。ここでの要約の根拠です",
+          },
+        ],
+      },
+      engineer: {
+        conclusion:
+          "Xの投稿が、長文コンテキストでの脱落が減ったと報告しています。\n公式ドキュメントは紐づいていないため、APIの差分としては未確認です。\n採用判断の前に、投稿URLと再現条件を残してください。",
+        detail:
+          "根拠は投稿本文のみです。モデル名の正式表記やレート制限の変更は書かれていません。\n実装へ落とすときは、投稿の主張と手元のプロンプトで再現できるかを分けて記録します。\n公式changelogが後から出たら、そちらを一次情報として読み直してください。",
+        situations: [
+          "長文プロンプトの脱落を調査するとき",
+          "未確認のモデル話をチケットに残すとき",
+          "公式発表が出るまで様子を見るとき",
+        ],
+        terms: [
+          {
+            term: "コンテキスト",
+            plain: "モデルに一度に渡す入力の範囲",
+          },
+        ],
+      },
+    },
+  }),
   seedArticle({
     id: "seed-openai-news",
     source: "OpenAI",

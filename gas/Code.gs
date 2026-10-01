@@ -17,7 +17,9 @@
  * 7. createXSignalTrigger を実行（毎日 4, 9, 12, 15, 18, 21 時）
  *
  * X の投稿はここでは取得しない。
- * 浅子が /api/intake に渡して承認した候補だけ、ingestReadyXSignals が公式ページを要約する。
+ * 浅子が /api/intake に渡して承認した候補だけ、ingestReadyXSignals が要約する。
+ * 公式URLがあればそのページを根拠にする。無い、または本文が空なら投稿本文で要約し、
+ * 記事URLは公式URL、無ければ投稿URLにする。
  */
 
 var FEEDS = [
@@ -230,8 +232,10 @@ function createDailyTrigger() {
 }
 
 /**
- * 人が承認し、公式URL付きで ready になった X 候補だけを要約して取り込む。
- * X / Twitter の URL は取得しない。根拠は公式ページの本文。
+ * 人が承認して ready になった X 候補を、新しいものから要約して取り込む。
+ * 並びは /api/intake?status=ready の返却順（作成が新しい候補から）。浅子はバズしている投稿から渡す。
+ * 公式URLがあればそのページを根拠にする。無い、または本文が空なら投稿本文だけで要約する。
+ * 記事URLは公式URL、無ければ投稿URL。X / Twitter のページ自体は取得しない。
  */
 function ingestReadyXSignals() {
   var props = PropertiesService.getScriptProperties();
@@ -266,35 +270,54 @@ function ingestReadyXSignals() {
 
   signals.forEach(function (signal) {
     try {
-      assertOfficialPageUrl_(signal.officialUrl);
-      var officialText = fetchOfficialPageText_(signal.officialUrl);
-      if (!officialText) {
-        throw new Error("official page was empty");
+      var xPostUrl = String(signal.xPostUrl || "").trim();
+      if (!xPostUrl) throw new Error("missing xPostUrl");
+
+      var officialUrl = String(signal.officialUrl || "").trim();
+      var officialText = "";
+      if (officialUrl) {
+        assertOfficialPageUrl_(officialUrl);
+        officialText = fetchOfficialPageText_(officialUrl);
       }
+
+      var body = String(signal.body || "").trim();
+      var sourcePlan = resolveXIngestSource_(officialUrl, xPostUrl, officialText);
+      if (sourcePlan.evidence === "x" && !body) {
+        throw new Error("X post body was empty");
+      }
+
+      var evidence =
+        sourcePlan.evidence === "official"
+          ? "公式ページ（事実の根拠）:\n" +
+            officialText +
+            "\n\nXの投稿（きっかけ。公式ページと矛盾する場合は公式を優先し、推測で埋めない）:\n" +
+            body.slice(0, 4000)
+          : "Xの投稿本文（公式ページは無い、または本文を取得できなかった。投稿に書かれている内容を説明し、タイトルの転記だけで済ませない。推測で埋めない）:\n" +
+            body.slice(0, 4000);
+
       var summary = summarizeWithGemini_(
         apiKey,
         geminiModel,
         signal.source || "X",
         signal.title,
-        "公式ページ（事実の根拠）:\n" +
-          officialText +
-          "\n\nXの投稿（きっかけ。公式ページと矛盾する場合は公式を優先し、推測で埋めない）:\n" +
-          String(signal.body || "").slice(0, 4000),
+        evidence,
+        true,
       );
-      postIngest_(ingestUrl, ingestSecret, {
+      var payload = {
         source: signal.source || "X",
         title: summary.title || signal.title,
-        url: signal.officialUrl,
+        url: sourcePlan.url,
         publishedAt: signal.publishedAt || new Date().toISOString(),
         origin: "x",
-        xPostUrl: signal.xPostUrl,
-        officialNote: "公式もこう言っている",
+        xPostUrl: xPostUrl,
         signalId: signal.id,
         summary: {
           general: summary.general,
           engineer: summary.engineer,
         },
-      });
+      };
+      if (sourcePlan.officialNote) payload.officialNote = sourcePlan.officialNote;
+      postIngest_(ingestUrl, ingestSecret, payload);
       ingested += 1;
       Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
     } catch (e) {
@@ -323,6 +346,20 @@ function createXSignalTrigger() {
       .atHour(hour)
       .create();
   });
+}
+
+/**
+ * src/lib/intake.ts の resolveXIngestSource と同じ規則。
+ * 公式本文が取れたときだけ「公式もこう言っている」を付ける。
+ */
+function resolveXIngestSource_(officialUrl, xPostUrl, officialText) {
+  var page = String(officialUrl || "").trim();
+  var usedOfficial = Boolean(page && String(officialText || "").trim());
+  return {
+    url: page || String(xPostUrl || "").trim(),
+    officialNote: usedOfficial ? "公式もこう言っている" : "",
+    evidence: usedOfficial ? "official" : "x",
+  };
 }
 
 function assertOfficialPageUrl_(url) {
@@ -528,7 +565,7 @@ function stripHtml_(html) {
     .trim();
 }
 
-function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
+function summarizeWithGemini_(apiKey, model, source, title, bodyText, requireDetail) {
   var endpoint =
     "https://generativelanguage.googleapis.com/v1beta/models/" +
     model +
@@ -569,6 +606,7 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
     "- terms の plain は1文で簡潔に（general はたとえ話OK、engineer は正確な定義）\n" +
     "- やや詳しめ。ただし冗長にしない\n" +
     "- 不明点は推測で埋めない\n" +
+    "- タイトルや見出しの転記だけで済ませない。本文が伝えている内容を conclusion と detail で説明する\n" +
     "- JSONとして必ずパースできる形で返す（末尾カンマ禁止）\n\n" +
     "source: " +
     source +
@@ -612,6 +650,19 @@ function summarizeWithGemini_(apiKey, model, source, title, bodyText) {
       var parsed = parseModelJson_(content);
       if (!parsed.general || !parsed.engineer) {
         throw new Error("Gemini response missing fields: " + content);
+      }
+      if (
+        !conclusionExplains_(title, parsed.general.conclusion) ||
+        !conclusionExplains_(title, parsed.engineer.conclusion)
+      ) {
+        throw new Error("summary pasted the title or was empty");
+      }
+      if (
+        requireDetail &&
+        (!normalizePlainText_(detailToText_(parsed.general.detail)) ||
+          !normalizePlainText_(detailToText_(parsed.engineer.detail)))
+      ) {
+        throw new Error("summary detail was empty");
       }
       return {
         title: normalizePlainText_(parsed.title || title),
@@ -675,6 +726,15 @@ function normalizeAudienceSummary_(raw) {
     situations: situations,
     terms: terms,
   };
+}
+
+/** 結論が本文の説明になっているか。空欄とタイトルだけの転記は不可 */
+function conclusionExplains_(title, conclusion) {
+  var text = normalizePlainText_(conclusionToText_(conclusion));
+  var titleText = normalizePlainText_(title);
+  if (!text || text === "（結論未入力）") return false;
+  if (titleText && text === titleText) return false;
+  return true;
 }
 
 function conclusionToText_(value) {

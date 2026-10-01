@@ -92,6 +92,21 @@ export type ListWindow = (typeof LIST_WINDOWS)[number]["slug"];
 
 export const DEFAULT_LIST_WINDOW: ListWindow = "24h";
 
+/**
+ * ホーム最上段の入手元。
+ * x は origin が x の記事。official は公式RSS（origin が x 以外）。
+ * 一覧は1ページ20件なので、チャネルを分けると X が公式RSSの連続に埋もれない。
+ */
+export const ARTICLE_CHANNELS = [
+  { slug: "x", label: "X（SNS）" },
+  { slug: "official", label: "公式サイト" },
+  { slug: "all", label: "All" },
+] as const;
+
+export type ArticleChannel = (typeof ARTICLE_CHANNELS)[number]["slug"];
+
+export const DEFAULT_ARTICLE_CHANNEL: ArticleChannel = "all";
+
 /** 直近24時間のミリ秒 */
 export const LIST_WINDOW_24H_MS = 24 * 60 * 60 * 1000;
 
