@@ -19,7 +19,84 @@ export const INGEST_MAX_LENGTHS = {
   source: 100,
   title: 300,
   url: 2000,
+  officialNote: 200,
+  signalId: 32,
+  xPostUrl: 2000,
 } as const;
+
+/** 浅子が1回の POST で渡せる X 候補の上限 */
+export const INTAKE_MAX_ITEMS = 20;
+
+/** X 候補の各フィールド上限 */
+export const INTAKE_MAX_LENGTHS = {
+  source: 100,
+  title: 300,
+  text: 5000,
+  author: 100,
+  url: 2000,
+  note: 500,
+  actor: 40,
+} as const;
+
+/** 粗い自動仕分けで「短すぎる」と落とす本文の下限 */
+export const COARSE_MIN_TEXT_LENGTH = 12;
+
+/**
+ * 粗い自動仕分けで通す語。
+ * 製品名が無い投稿は人が見る列に出さず、filtered に残す。
+ */
+export const COARSE_TOPIC_TERMS = [
+  "openai",
+  "chatgpt",
+  "gpt",
+  "claude",
+  "anthropic",
+  "gemini",
+  "deepmind",
+  "cursor",
+  "laravel",
+  "vercel",
+  "next.js",
+  "nextjs",
+  "github",
+  "cloudflare",
+  "supabase",
+  "bedrock",
+  "sagemaker",
+  "llm",
+  "生成ai",
+  "人工知能",
+] as const;
+
+/** 公式一次情報で裏が取れた X 記事に付ける注記 */
+export const OFFICIAL_CONFIRMATION_NOTE = "公式もこう言っている";
+
+/** GET /api/intake で status を省略したときに返す作業列 */
+export const INTAKE_QUEUE_STATUSES = [
+  "pending_review",
+  "needs_factcheck",
+  "ready",
+] as const;
+
+/** 一覧の初期表示期間。同じ日の RSS で X 記事が埋もれにくくする */
+export const LIST_WINDOWS = [
+  { slug: "24h", label: "直近24時間" },
+  { slug: "today", label: "今日" },
+  { slug: "all", label: "すべて" },
+] as const;
+
+export type ListWindow = (typeof LIST_WINDOWS)[number]["slug"];
+
+export const DEFAULT_LIST_WINDOW: ListWindow = "24h";
+
+/** 直近24時間のミリ秒 */
+export const LIST_WINDOW_24H_MS = 24 * 60 * 60 * 1000;
+
+/** 同じソースがこの件数以上、近い時間に続くときは1つにまとめる */
+export const SOURCE_BURST_MIN = 3;
+
+/** まとめるときの投稿間隔の上限 */
+export const SOURCE_BURST_GAP_MS = 6 * 60 * 60 * 1000;
 
 /** 詳細ページの読者タブ */
 export const AUDIENCE_VOICES = [

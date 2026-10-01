@@ -37,6 +37,7 @@
 | 関数 | 対象 | 用途 |
 |---|---|---|
 | `runOnce` | RSSの**新着だけ** | これから入る記事を2ボイス＋詳細内容付きで取り込む |
+| `ingestReadyXSignals` | 人が承認した **X候補（ready）だけ** | 公式ページを読んで2ボイス要約し、記事にする。Xのページは取りに行かない |
 | `backfillDualVoiceArticles` | アプリ内の**既存記事** | 過去記事を2ボイス化し、詳細内容も生成し直す |
 
 任意プロパティ:
@@ -80,3 +81,37 @@
 4. 次回 `runOnce` で新着があれば通知される
 
 未設定の間は通知だけスキップされ、取り込み自体は動きます。
+
+## X の候補（浅子の手渡し）
+
+X の API も、GAS からの X ページ取得もしません。浅子がブラウザで拾った投稿を、アプリの `/api/intake` に渡します。`APP_BASE_URL` と `INGEST_SECRET` を使います。
+
+1. 候補を送る（粗い仕分けはサーバーが行う）
+
+```bash
+curl -X POST "$APP_BASE_URL/api/intake" \
+  -H "Authorization: Bearer $INGEST_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "xPostUrl": "https://x.com/someone/status/123",
+        "text": "投稿の本文",
+        "source": "OpenAI",
+        "author": "@someone"
+      }
+    ]
+  }'
+```
+
+2. 確認待ちを見る: `GET /api/intake?status=pending_review`
+3. 浅子が判断する: `POST /api/intake/<id>`
+   - 公式URLがある: `{"action":"approve","actor":"asako","officialUrl":"https://openai.com/..."}` → `ready`
+   - 公式URLがない: `{"action":"approve","actor":"asako"}` → メモ（記事にしない）
+   - 裏取りが曖昧: `{"action":"flag_factcheck","actor":"asako","note":"一次情報が見つからない"}`
+4. 龍馬が曖昧なものを返す: `POST /api/intake/<id>`  
+   `{"action":"resolve_factcheck","actor":"ryoma","officialUrl":"https://..."}`  
+   URLが無ければメモになります。
+5. `ingestReadyXSignals` を実行する。`ready` だけを公式ページから要約し、既存の2ボイス形式で `/api/ingest` に送ります。毎日なら `createXSignalTrigger`（9時）を一度実行します。
+
+RSS の `runOnce` はこの流れを呼びません。

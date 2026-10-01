@@ -13,6 +13,8 @@ ChatGPT / Claude / Gemini などの更新を追いながら、「何が変わっ
 ## 主な機能
 
 - 公式・準公式 RSS から新着を自動取り込み
+- X の投稿は API では取らない。人が渡した候補だけを仕分けし、公式URLがあるものだけ記事にする
+- 一覧の初期表示は直近24時間。同じソースの近い更新はまとめて出す
 - Gemini による日本語要約（結論 / 用語ひとこと / 使える場面）
 - **非エンジニア向け / エンジニア向け** の2ボイス切替（事実は同じ・言い方だけ変える）
 - **30秒で読む / 詳しく読む** の粒度切替（結論だけ先に読める）
@@ -142,6 +144,65 @@ Content-Type: application/json
 ```
 
 旧形式（`summary.conclusion` + `summary.situations`）も受け付け、両ボイスへ展開します。
+
+X 由来で公式URLがある記事は、同じエンドポイントに次を足します。`url` は公式ページ、`xPostUrl` は投稿です。`signalId` は必須で、`ready` の候補だけを `ingested` にします。
+
+```json
+{
+  "origin": "x",
+  "xPostUrl": "https://x.com/someone/status/123",
+  "officialNote": "公式もこう言っている",
+  "signalId": "s_0123456789abcdef"
+}
+```
+
+`origin` を付けない既存の RSS 取り込みはそのまま動きます。同じ公式URLが既にあれば1件にまとまり、後から付いた X のリンクは RSS の再取り込みでは消えません。
+
+### `POST /api/intake`
+
+浅子がブラウザで拾った X の候補を渡す入口です。X の API は使いません。`Authorization: Bearer <INGEST_SECRET>` が必要です。
+
+```json
+{
+  "items": [
+    {
+      "xPostUrl": "https://x.com/someone/status/123",
+      "text": "Claude の新しいモデルが公開された、という投稿本文",
+      "source": "Claude",
+      "author": "@someone",
+      "publishedAt": "2026-10-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+1件だけなら `items` なしで同じフィールドを直に渡せます。サーバーが粗い仕分けをします。
+
+| 結果 | 意味 |
+|---|---|
+| `pending_review` | 浅子の確認待ち |
+| `filtered` | 短すぎる、または監視製品名が無い。`restore` で確認待ちに戻せる |
+| 同じ URL の再送 | 確認待ち以降のものは上書きしない（`duplicate: true`） |
+
+### `GET /api/intake`
+
+同じ秘密文字列が必要です。`status` を省略すると作業列（`pending_review` / `needs_factcheck` / `ready`）です。`memo` や `filtered`、`all` も指定できます。
+
+### `POST /api/intake/:id`
+
+浅子と龍馬の判断です。`actor` は記録用です（認証の分けはまだありません）。
+
+| action | 誰 | 結果 |
+|---|---|---|
+| `approve` + `officialUrl` | 浅子 | `ready`。この後 GAS の `ingestReadyXSignals` が2ボイス要約して記事にする |
+| `approve`（URLなし） | 浅子 | `memo`。記事にはしない |
+| `flag_factcheck` | 浅子 | `needs_factcheck`。裏取りが曖昧なとき龍馬へ |
+| `resolve_factcheck` + `officialUrl` | 龍馬 | `ready` |
+| `resolve_factcheck`（URLなし） | 龍馬 | `memo` |
+| `reject` | どちらでも | `rejected` |
+| `restore` | 浅子 | `filtered` を確認待ちに戻す |
+
+公式URLがある X 記事は1件です。画面には X の投稿リンクと「公式もこう言っている」を出します。メモは `/memos` に出します。
 
 ### `GET /api/articles`
 

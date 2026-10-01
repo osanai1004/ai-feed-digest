@@ -277,6 +277,11 @@ a {
   border: 1px solid transparent;
 }
 
+.ui-x-badge {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
 .ui-source-badge {
   display: inline-flex;
   max-width: 100%;

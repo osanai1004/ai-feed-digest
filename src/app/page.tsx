@@ -5,9 +5,10 @@ import {
   availableCategories,
   availableGenres,
   filterArticles,
+  filterByListWindow,
   parseArticleListQuery,
 } from "@/lib/articleFilters";
-import { listArticles } from "@/lib/store";
+import { listArticles, listMemos } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -26,23 +27,29 @@ function latestCreatedAt(articles: { createdAt: string }[]): string | null {
 
 export default async function HomePage({ searchParams }: Props) {
   const articles = await listArticles();
+  const memos = await listMemos();
   const query = parseArticleListQuery(await searchParams);
-  const categories = availableCategories(articles);
-  const genres = availableGenres(articles, query.category);
-  const filtered = filterArticles(articles, query);
+  const inWindow = filterByListWindow(articles, query.window);
+  const categories = availableCategories(inWindow);
+  const genres = availableGenres(inWindow, query.category);
+  const filtered = filterArticles(inWindow, query);
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">
-      <HomeHero lastUpdatedAt={latestCreatedAt(articles)} />
+      <HomeHero
+        lastUpdatedAt={latestCreatedAt(articles)}
+        memoCount={memos.length}
+      />
 
       <ArticleListControls
         q={query.q}
         category={query.category}
         genre={query.genre}
+        window={query.window}
         categories={categories}
         genres={genres}
         resultCount={filtered.length}
-        totalCount={articles.length}
+        totalCount={inWindow.length}
       />
 
       <ArticleListView articles={filtered} query={query} />

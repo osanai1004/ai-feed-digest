@@ -28,6 +28,12 @@ export function articleToMarkdown(
     "",
     `- 情報源: ${article.source}（${formatDate(article.publishedAt, "long")}）`,
     `- 原文: ${article.url}`,
+    ...(article.origin === "x" && article.xPostUrl
+      ? [`- Xの投稿: ${article.xPostUrl}`]
+      : []),
+    ...(article.origin === "x" && article.officialNote
+      ? [`- ${article.officialNote}`]
+      : []),
     "",
     "### 結論",
     "",
@@ -88,6 +94,13 @@ export function articleToSlackText(
     "■ 原文",
     article.url,
   );
+
+  if (article.origin === "x" && article.officialNote) {
+    lines.push("", `■ ${article.officialNote}`);
+  }
+  if (article.origin === "x" && article.xPostUrl) {
+    lines.push("Xの投稿", article.xPostUrl);
+  }
 
   return lines.join("\n");
 }

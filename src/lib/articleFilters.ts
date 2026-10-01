@@ -2,9 +2,12 @@ import {
   ARTICLE_CATEGORIES,
   ARTICLE_GENRES,
   ARTICLES_PER_PAGE,
+  DEFAULT_LIST_WINDOW,
   type CategorySlug,
   type GenreSlug,
+  type ListWindow,
 } from "./constants";
+import { isInListWindow, parseListWindow } from "./listWindow";
 import type { Article } from "./types";
 
 export type ArticleListQuery = {
@@ -12,6 +15,7 @@ export type ArticleListQuery = {
   category: CategorySlug | "";
   genre: GenreSlug | "";
   page: number;
+  window: ListWindow;
 };
 
 function firstParam(
@@ -39,8 +43,19 @@ export function parseArticleListQuery(searchParams: {
       : "";
   const pageRaw = Number.parseInt(firstParam(searchParams.page) ?? "1", 10);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+  const window = parseListWindow(firstParam(searchParams.window));
 
-  return { q, category, genre, page };
+  return { q, category, genre, page, window };
+}
+
+export function filterByListWindow(
+  articles: Article[],
+  window: ListWindow,
+  now: Date = new Date(),
+): Article[] {
+  return articles.filter((article) =>
+    isInListWindow(article.publishedAt, window, now),
+  );
 }
 
 /** 検索・ウォッチキーワード照合に使う記事の全文テキスト */
@@ -149,12 +164,16 @@ export function buildListHref(params: {
   category?: string;
   genre?: string;
   page?: number;
+  window?: ListWindow;
 }): string {
   const sp = new URLSearchParams();
   const q = params.q?.trim();
   if (q) sp.set("q", q);
   if (params.category) sp.set("category", params.category);
   if (params.genre) sp.set("genre", params.genre);
+  if (params.window && params.window !== DEFAULT_LIST_WINDOW) {
+    sp.set("window", params.window);
+  }
   if (params.page && params.page > 1) sp.set("page", String(params.page));
   const qs = sp.toString();
   return qs ? `/?${qs}` : "/";

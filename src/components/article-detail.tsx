@@ -1,6 +1,6 @@
 import { ArticleActions } from "@/components/article-actions";
 import { ArticleAudiencePanel } from "@/components/article-audience-panel";
-import { SourceBadge, sourceToneVars } from "@/components/ui/source-badge";
+import { SourceBadge, sourceToneVars, XSignalBadge } from "@/components/ui/source-badge";
 import { formatDate } from "@/lib/formatDate";
 import { safeExternalUrl } from "@/lib/safeUrl";
 import type { Article } from "@/lib/types";
@@ -22,6 +22,9 @@ export function ArticleDetail({ article }: Props) {
       <div className="p-5 sm:p-8">
         <div className="mb-4 flex min-w-0 flex-wrap items-center gap-3">
           <SourceBadge source={article.source} />
+          {article.origin === "x" && article.source.trim().toLowerCase() !== "x" ? (
+            <XSignalBadge />
+          ) : null}
           <time
             dateTime={article.publishedAt}
             className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
@@ -45,20 +48,41 @@ export function ArticleDetail({ article }: Props) {
 
         {externalUrl ? (
           <div className="mt-8 border-t border-[var(--hairline)] pt-6">
+            {article.origin === "x" && article.officialNote ? (
+              <p className="mb-3 text-[14px] font-bold text-[var(--ink)]">
+                {article.officialNote}
+              </p>
+            ) : null}
             <a
               href={externalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="cta-button w-full sm:w-auto"
             >
-              元記事で詳細を確認する →
+              {article.origin === "x"
+                ? "公式記事で確認する →"
+                : "元記事で詳細を確認する →"}
             </a>
             <p className="mt-3 text-[13px] leading-6 text-[var(--body)]">
-              まずカード内の要約で把握。詳しく見たいときだけ公式へ。
+              {article.origin === "x"
+                ? "Xの投稿がきっかけです。内容の裏取りは公式の一次情報でしています。"
+                : "まずカード内の要約で把握。詳しく見たいときだけ公式へ。"}
             </p>
             <p className="mt-2 break-all text-[12px] text-[var(--accent)]">
               {externalUrl}
             </p>
+            {article.origin === "x" && safeExternalUrl(article.xPostUrl ?? "") ? (
+              <p className="mt-4 text-[13px] leading-6">
+                <a
+                  href={safeExternalUrl(article.xPostUrl ?? "") ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+                >
+                  Xの投稿を見る
+                </a>
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>
