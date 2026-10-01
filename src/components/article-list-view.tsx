@@ -113,7 +113,11 @@ export function ArticleListView({ articles, query }: Props) {
   // 端末内状態での絞り込み中は「もっと見る」方式で表示する
   const bundled = useMemo(() => {
     const source = status === "all" ? articles : statusFiltered;
-    if (query.channel === "x" && query.sort === "impressions") {
+    // 表示回数・いいね順は公開時刻の束ねを外し、数値の並びを崩さない
+    if (
+      query.channel === "x" &&
+      (query.sort === "impressions" || query.sort === "likes")
+    ) {
       return source.map((article) => ({ kind: "article" as const, article }));
     }
     return bundleSourceBursts(source);

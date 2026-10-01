@@ -180,13 +180,34 @@ describe("article categories", () => {
       "latest",
     );
     assert.equal(
+      parseArticleListQuery({ channel: "x", sort: "likes" }).sort,
+      "likes",
+    );
+    assert.equal(
+      parseArticleListQuery({ channel: "official", sort: "likes" }).sort,
+      "latest",
+    );
+    assert.equal(
+      parseArticleListQuery({ channel: "all", sort: "likes" }).sort,
+      "latest",
+    );
+    assert.equal(
       buildListHref({ channel: "x", sort: "impressions" }),
       "/?channel=x&sort=impressions",
+    );
+    assert.equal(
+      buildListHref({ channel: "x", sort: "likes" }),
+      "/?channel=x&sort=likes",
     );
     assert.equal(
       buildListHref({ channel: "official", sort: "impressions" }),
       "/?channel=official",
     );
+    assert.equal(
+      buildListHref({ channel: "official", sort: "likes" }),
+      "/?channel=official",
+    );
+    assert.equal(buildListHref({ channel: "x", sort: "latest" }), "/?channel=x");
   });
 
   it("lists only categories that have a matching article", () => {
