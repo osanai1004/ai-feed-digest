@@ -110,6 +110,7 @@ curl -X POST "$APP_BASE_URL/api/intake" \
 3. 浅子が判断する: `POST /api/intake/<id>`
    - 公式URLがある: `{"action":"approve","actor":"asako","officialUrl":"https://openai.com/..."}` → `ready`
    - 公式URLがない（投稿URLはある）: `{"action":"approve","actor":"asako"}` → `ready`。記事URLは投稿URL
+   - 以前のルールで `memo` に残った候補も、同じ `approve` で `ready` にできます。投稿URLがあれば公式URLは無くてよく、送ったものだけが動きます
    - 裏取りが曖昧: `{"action":"flag_factcheck","actor":"asako","note":"一次情報が見つからない"}`
 4. 龍馬が曖昧なものを返す: `POST /api/intake/<id>`  
    `{"action":"resolve_factcheck","actor":"ryoma","officialUrl":"https://..."}`  

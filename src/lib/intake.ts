@@ -160,6 +160,7 @@ function readyDecision(input: {
  * 人の操作を次の状態に変える。
  * 承認・裏取り解決は要約待ち（ready）にする。
  * 公式 URL が無くても、X の投稿 URL があれば記事にしてよい。
+ * メモは自動では動かさず、明示的な承認のときだけ同じ条件で ready にする。
  */
 export function applyIntakeAction(input: {
   status: IntakeStatus;
@@ -203,8 +204,11 @@ export function applyIntakeAction(input: {
   }
 
   if (action === "approve") {
-    if (status !== "pending_review") {
-      return { ok: false, error: "Approve is only available from pending review" };
+    if (status !== "pending_review" && status !== "memo") {
+      return {
+        ok: false,
+        error: "Approve is only available from pending review or memo",
+      };
     }
     return readyDecision({ officialUrl, xPostUrl: input.xPostUrl });
   }
