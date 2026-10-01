@@ -3,6 +3,7 @@ import { assertIngestAuthorized } from "@/lib/auth";
 import { INGEST_MAX_LENGTHS } from "@/lib/constants";
 import { readErrorMessage, readErrorStatus } from "@/lib/http";
 import { isAllowedXArticleUrl, isXPostUrl } from "@/lib/intake";
+import { readXMetricPatch } from "@/lib/xMetrics";
 import { isSafeExternalUrl } from "@/lib/safeUrl";
 import { markSignalIngested, upsertArticle } from "@/lib/store";
 import { isDualSummary, isLegacySummary, summaryExplainsContent } from "@/lib/summary";
@@ -110,9 +111,11 @@ export async function POST(request: Request) {
     }
 
     const provenance = readProvenance(body, body.url.trim());
+    const metrics = readXMetricPatch(body);
     const article = await upsertArticle({
       ...body,
       ...provenance,
+      ...metrics,
     });
     if (provenance?.signalId) {
       await markSignalIngested(provenance.signalId, article.id, article.url);

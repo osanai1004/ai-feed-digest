@@ -107,6 +107,28 @@ export type ArticleChannel = (typeof ARTICLE_CHANNELS)[number]["slug"];
 
 export const DEFAULT_ARTICLE_CHANNEL: ArticleChannel = "all";
 
+/**
+ * Xチャネルだけの並び。
+ * All と公式サイトには出さない（期間との掛け合わせ表にはしない）。
+ */
+export const X_LIST_SORTS = [
+  { slug: "latest", label: "新しい順" },
+  { slug: "impressions", label: "表示回数" },
+] as const;
+
+export type XListSort = (typeof X_LIST_SORTS)[number]["slug"];
+
+export const DEFAULT_X_LIST_SORT: XListSort = "latest";
+
+/** 既存X記事の数値を更新してよい公開からの日数 */
+export const X_METRICS_REFRESH_DAYS = 14;
+
+/** 1回の取り込みで数値を書き換える既存記事の上限 */
+export const X_METRICS_REFRESH_MAX = 20;
+
+/** 表示回数・リポスト・いいねとして保存する上限 */
+export const X_METRIC_MAX = 2_000_000_000;
+
 /** 直近24時間のミリ秒 */
 export const LIST_WINDOW_24H_MS = 24 * 60 * 60 * 1000;
 

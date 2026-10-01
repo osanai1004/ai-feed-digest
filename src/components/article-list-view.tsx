@@ -111,10 +111,13 @@ export function ArticleListView({ articles, query }: Props) {
 
   // 「すべて」はURLのページ番号どおり（共有可能なリンクを維持）、
   // 端末内状態での絞り込み中は「もっと見る」方式で表示する
-  const bundled = useMemo(
-    () => bundleSourceBursts(status === "all" ? articles : statusFiltered),
-    [articles, status, statusFiltered],
-  );
+  const bundled = useMemo(() => {
+    const source = status === "all" ? articles : statusFiltered;
+    if (query.channel === "x" && query.sort === "impressions") {
+      return source.map((article) => ({ kind: "article" as const, article }));
+    }
+    return bundleSourceBursts(source);
+  }, [articles, query.channel, query.sort, status, statusFiltered]);
   const pageResult =
     status === "all" ? paginateArticles(bundled, query.page) : null;
   const visibleItems: ArticleListEntry[] = pageResult
@@ -299,6 +302,7 @@ export function ArticleListView({ articles, query }: Props) {
           category={query.category}
           genre={query.genre}
           window={query.window}
+          sort={query.sort}
           page={pageResult.page}
           totalPages={pageResult.totalPages}
           total={pageResult.total}

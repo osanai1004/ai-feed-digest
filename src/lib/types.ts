@@ -48,6 +48,12 @@ export type Article = {
   xPostUrl?: string | null;
   /** origin が x のとき、公式一次情報がある旨の注記 */
   officialNote?: string | null;
+  /** 未取得は null。0 は実際のゼロ件 */
+  impressions?: number | null;
+  reposts?: number | null;
+  likes?: number | null;
+  /** 表示回数などを最後に書いた時刻 */
+  metricsUpdatedAt?: string | null;
 };
 
 /** 旧形式（単一ボイス）も ingest で受け付ける */
@@ -68,6 +74,9 @@ export type IngestPayload = {
   officialNote?: string;
   /** ready の X 候補を記事に紐付ける */
   signalId?: string;
+  impressions?: number;
+  reposts?: number;
+  likes?: number;
 };
 
 /** X候補の進行状態（記事そのものではない） */
@@ -113,4 +122,8 @@ export type IntakeSignal = {
   updatedBy: string | null;
   createdAt: string;
   updatedAt: string;
+  impressions: number | null;
+  reposts: number | null;
+  likes: number | null;
+  metricsUpdatedAt: string | null;
 };
