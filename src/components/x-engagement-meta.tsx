@@ -11,9 +11,9 @@ type Props = {
 };
 
 const FIELDS = [
-  { key: "impressions", label: "表示" },
-  { key: "reposts", label: "リポスト" },
-  { key: "likes", label: "いいね" },
+  { key: "impressions", label: "表示", hero: true },
+  { key: "reposts", label: "リポスト", hero: false },
+  { key: "likes", label: "いいね", hero: false },
 ] as const;
 
 function metricUpdatedLabel(value: string): string {
@@ -30,33 +30,60 @@ function metricUpdatedLabel(value: string): string {
   }
 }
 
-/** 数値が無い項目は出さない。0 は実数として出す */
+function MetricBadge({
+  label,
+  value,
+  hero,
+}: {
+  label: string;
+  value: number;
+  hero: boolean;
+}) {
+  const count = formatMetricCount(value);
+  if (hero) {
+    return (
+      <span className="ui-metric-hero">
+        <span className="ui-metric-hero-label">{label}</span>
+        <span className="ui-metric-hero-value">{count}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="ui-metric-chip">
+      <span className="ui-metric-chip-label">{label}</span>
+      <span className="ui-metric-chip-value">{count}</span>
+    </span>
+  );
+}
+
+/** 数値が無い項目は出さない。0 は実数として出す。表示回数だけ大きく出す */
 export function XEngagementMeta({ article, className = "pl-2.5" }: Props) {
   if (article.origin !== "x") return null;
   const parts = FIELDS.flatMap((field) => {
     const value = article[field.key];
     if (typeof value !== "number") return [];
-    return [{ label: field.label, value }];
+    return [{ key: field.key, label: field.label, value, hero: field.hero }];
   });
   if (parts.length === 0) return null;
 
   return (
-    <p
-      className={`mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-semibold text-[var(--ink-soft)] ${className}`}
-    >
+    <div className={`ui-metric-row mt-3 ${className}`}>
       {parts.map((part) => (
-        <span key={part.label}>
-          {part.label} {formatMetricCount(part.value)}
-        </span>
+        <MetricBadge
+          key={part.key}
+          label={part.label}
+          value={part.value}
+          hero={part.hero}
+        />
       ))}
       {article.metricsUpdatedAt ? (
         <time
           dateTime={article.metricsUpdatedAt}
-          className="font-medium text-[var(--mute)]"
+          className="ui-metric-updated"
         >
           数値更新 {metricUpdatedLabel(article.metricsUpdatedAt)}
         </time>
       ) : null}
-    </p>
+    </div>
   );
 }
