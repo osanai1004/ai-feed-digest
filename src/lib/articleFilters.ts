@@ -5,11 +5,14 @@ import {
   ARTICLES_PER_PAGE,
   DEFAULT_ARTICLE_CHANNEL,
   DEFAULT_LIST_WINDOW,
+  DEFAULT_X_LIST_SORT,
   type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
   type ListWindow,
+  type XListSort,
 } from "./constants";
+import { parseXListSort } from "./xMetrics";
 import { isInListWindow, parseListWindow } from "./listWindow";
 import type { Article } from "./types";
 
@@ -20,6 +23,8 @@ export type ArticleListQuery = {
   genre: GenreSlug | "";
   page: number;
   window: ListWindow;
+  /** Xチャネル以外は常に latest */
+  sort: XListSort;
 };
 
 function firstParam(
@@ -54,8 +59,12 @@ export function parseArticleListQuery(searchParams: {
   const pageRaw = Number.parseInt(firstParam(searchParams.page) ?? "1", 10);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
   const window = parseListWindow(firstParam(searchParams.window));
+  const sort =
+    channel === "x"
+      ? parseXListSort(firstParam(searchParams.sort))
+      : DEFAULT_X_LIST_SORT;
 
-  return { q, channel, category, genre, page, window };
+  return { q, channel, category, genre, page, window, sort };
 }
 
 /** 入手元。未設定の origin は公式RSSとして扱う */
@@ -218,6 +227,7 @@ export function buildListHref(params: {
   genre?: string;
   page?: number;
   window?: ListWindow;
+  sort?: XListSort;
 }): string {
   const sp = new URLSearchParams();
   const q = params.q?.trim();
@@ -229,6 +239,13 @@ export function buildListHref(params: {
   if (params.genre) sp.set("genre", params.genre);
   if (params.window && params.window !== DEFAULT_LIST_WINDOW) {
     sp.set("window", params.window);
+  }
+  if (
+    params.channel === "x" &&
+    params.sort &&
+    params.sort !== DEFAULT_X_LIST_SORT
+  ) {
+    sp.set("sort", params.sort);
   }
   if (params.page && params.page > 1) sp.set("page", String(params.page));
   const qs = sp.toString();

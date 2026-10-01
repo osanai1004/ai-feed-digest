@@ -15,6 +15,10 @@ type SeedInput = {
   origin?: Article["origin"];
   xPostUrl?: string | null;
   officialNote?: string | null;
+  impressions?: number | null;
+  reposts?: number | null;
+  likes?: number | null;
+  metricsUpdatedAt?: string | null;
 };
 
 function seedArticle(input: SeedInput): Article {
@@ -33,6 +37,10 @@ function seedArticle(input: SeedInput): Article {
     origin: input.origin,
     xPostUrl: input.xPostUrl,
     officialNote: input.officialNote,
+    impressions: input.impressions,
+    reposts: input.reposts,
+    likes: input.likes,
+    metricsUpdatedAt: input.metricsUpdatedAt,
   };
 }
 
@@ -48,6 +56,10 @@ export const SEED_ARTICLES: Article[] = [
     situations: ["", "", ""],
     origin: "x",
     xPostUrl: "https://x.com/openai/status/1234567890",
+    impressions: 12800,
+    reposts: 240,
+    likes: 890,
+    metricsUpdatedAt: "2026-08-02T03:00:00.000Z",
     summary: {
       general: {
         conclusion:
@@ -82,6 +94,38 @@ export const SEED_ARTICLES: Article[] = [
             plain: "モデルに一度に渡す入力の範囲",
           },
         ],
+      },
+    },
+  }),
+  seedArticle({
+    id: "seed-x-lower-impressions",
+    source: "Claude",
+    title: "（サンプル）表示回数が少ない新しいX投稿",
+    url: "https://x.com/claudeai/status/2234567890",
+    publishedAt: "2026-08-03T00:00:00.000Z",
+    conclusion: "",
+    situations: ["", "", ""],
+    origin: "x",
+    xPostUrl: "https://x.com/claudeai/status/2234567890",
+    impressions: 400,
+    reposts: 12,
+    metricsUpdatedAt: "2026-08-03T01:00:00.000Z",
+    summary: {
+      general: {
+        conclusion:
+          "Xの投稿では、新しい作業の途中保存が安定したと書かれています。\n公式ページは無いので、この要約は投稿本文だけが根拠です。",
+        detail:
+          "投稿は体験談です。料金や提供範囲は書かれていないので、ここには入れていません。",
+        situations: ["朝にXの更新を短く把握したいとき", "投稿の要約を転送するとき", "公式発表を待つとき"],
+        terms: [],
+      },
+      engineer: {
+        conclusion:
+          "Xの投稿が、長文入力の途中保存が安定したと報告しています。\n公式ドキュメントは紐づいていないため、API差分としては未確認です。",
+        detail:
+          "根拠は投稿本文のみです。モデル名の正式表記は書かれていません。",
+        situations: ["長文プロンプトを調査するとき", "未確認の話を残すとき", "公式発表まで様子を見るとき"],
+        terms: [],
       },
     },
   }),

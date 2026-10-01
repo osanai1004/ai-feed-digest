@@ -170,6 +170,23 @@ describe("article categories", () => {
       buildListHref({ channel: "official", window: "all" }),
       "/?channel=official&window=all",
     );
+    assert.equal(parseArticleListQuery({ channel: "x" }).sort, "latest");
+    assert.equal(
+      parseArticleListQuery({ channel: "x", sort: "impressions" }).sort,
+      "impressions",
+    );
+    assert.equal(
+      parseArticleListQuery({ channel: "official", sort: "impressions" }).sort,
+      "latest",
+    );
+    assert.equal(
+      buildListHref({ channel: "x", sort: "impressions" }),
+      "/?channel=x&sort=impressions",
+    );
+    assert.equal(
+      buildListHref({ channel: "official", sort: "impressions" }),
+      "/?channel=official",
+    );
   });
 
   it("lists only categories that have a matching article", () => {
