@@ -120,8 +120,14 @@ export type XListSort = (typeof X_LIST_SORTS)[number]["slug"];
 
 export const DEFAULT_X_LIST_SORT: XListSort = "latest";
 
-/** 既存X記事の数値を更新してよい公開からの日数 */
+/** 既存X記事の数値を更新してよい公開からの日数。省略時の既定で、ここは変えない */
 export const X_METRICS_REFRESH_DAYS = 14;
+
+/**
+ * 認証済み intake の1回だけ、公開日ウィンドウを広げるときの上限。
+ * 31以上は受け付けず、30日に丸めない。既定の14日はこの値で置き換えない。
+ */
+export const X_METRICS_REFRESH_WINDOW_CAP = 30;
 
 /** 1回の取り込みで数値を書き換える既存記事の上限 */
 export const X_METRICS_REFRESH_MAX = 20;
