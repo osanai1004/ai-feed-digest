@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { X_METRICS_REFRESH_DAYS, X_METRICS_REFRESH_MAX } from "./constants";
+import {
+  X_METRICS_REFRESH_DAYS,
+  X_METRICS_REFRESH_MAX,
+  X_METRICS_REFRESH_WINDOW_CAP,
+} from "./constants";
 import type { Article } from "./types";
 import {
   applyXMetricRefresh,
   decideMetricRefresh,
+  readMetricsRefreshWindowDays,
   readXMetricPatch,
   sortXChannelArticles,
 } from "./xMetrics";
@@ -138,6 +143,85 @@ describe("X metric refresh window", () => {
       }),
       "skip_cap",
     );
+  });
+
+  it("widens one refresh with windowDays and leaves the 14-day default", () => {
+    const backfillNow = new Date("2026-10-01T12:00:00.000Z");
+    const publishedAt = "2026-09-15T12:00:00.000Z";
+    const patch = { impressions: 20, reposts: 1, likes: 2 };
+    assert.equal(
+      decideMetricRefresh({
+        publishedAt,
+        patch,
+        now: backfillNow,
+        refreshedSoFar: 0,
+      }),
+      "skip_window",
+    );
+    assert.equal(
+      decideMetricRefresh({
+        publishedAt,
+        patch,
+        now: backfillNow,
+        refreshedSoFar: 0,
+        windowDays: 17,
+      }),
+      "refresh",
+    );
+    const outside = new Date(
+      backfillNow.getTime() - 17 * 24 * 60 * 60 * 1000 - 1,
+    ).toISOString();
+    assert.equal(
+      decideMetricRefresh({
+        publishedAt: outside,
+        patch,
+        now: backfillNow,
+        refreshedSoFar: 0,
+        windowDays: 17,
+      }),
+      "skip_window",
+    );
+    assert.equal(
+      decideMetricRefresh({
+        publishedAt,
+        patch,
+        now: backfillNow,
+        refreshedSoFar: X_METRICS_REFRESH_MAX,
+        windowDays: 17,
+      }),
+      "skip_cap",
+    );
+  });
+});
+
+describe("metricsRefreshWindowDays", () => {
+  it("accepts an omitted value and integers from 1 through the cap", () => {
+    assert.deepEqual(readMetricsRefreshWindowDays(undefined), { ok: true });
+    assert.deepEqual(readMetricsRefreshWindowDays(1), { ok: true, days: 1 });
+    assert.deepEqual(readMetricsRefreshWindowDays(17), { ok: true, days: 17 });
+    assert.deepEqual(readMetricsRefreshWindowDays(X_METRICS_REFRESH_WINDOW_CAP), {
+      ok: true,
+      days: X_METRICS_REFRESH_WINDOW_CAP,
+    });
+    assert.equal(X_METRICS_REFRESH_DAYS, 14);
+  });
+
+  it("rejects values outside a safe positive integer at or below the cap", () => {
+    const rejected = [
+      0,
+      -1,
+      1.5,
+      31,
+      90,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      "17",
+      null,
+      true,
+    ];
+    for (const value of rejected) {
+      assert.deepEqual(readMetricsRefreshWindowDays(value), { ok: false });
+    }
   });
 });
 

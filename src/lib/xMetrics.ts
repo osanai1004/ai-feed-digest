@@ -5,6 +5,7 @@ import {
   X_METRIC_MAX,
   X_METRICS_REFRESH_DAYS,
   X_METRICS_REFRESH_MAX,
+  X_METRICS_REFRESH_WINDOW_CAP,
   type XListSort,
 } from "./constants";
 import type { Article } from "./types";
@@ -135,6 +136,23 @@ export type MetricRefreshDecision =
   | "skip_window"
   | "skip_cap"
   | "refresh";
+
+export type MetricsRefreshWindowDays =
+  | { ok: true; days?: number }
+  | { ok: false };
+
+/**
+ * intake JSON 先頭の metricsRefreshWindowDays。
+ * キーが無い（undefined）ときは days なし。呼び出し側は既定の14日のまま。
+ * 通すのは 1 以上 X_METRICS_REFRESH_WINDOW_CAP（30）以下の安全な整数だけ。
+ * 小数、文字列、0以下、31以上は ok: false。上限を超えた値は30に丸めない。
+ */
+export function readMetricsRefreshWindowDays(value: unknown): MetricsRefreshWindowDays {
+  if (value === undefined) return { ok: true };
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) return { ok: false };
+  if (value < 1 || value > X_METRICS_REFRESH_WINDOW_CAP) return { ok: false };
+  return { ok: true, days: value };
+}
 
 export function isWithinMetricsRefreshWindow(
   publishedAt: string,

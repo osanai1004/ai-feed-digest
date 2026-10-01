@@ -3,6 +3,7 @@ import { assertIngestAuthorized } from "@/lib/auth";
 import {
   INTAKE_MAX_ITEMS,
   INTAKE_MAX_LENGTHS,
+  X_METRICS_REFRESH_WINDOW_CAP,
 } from "@/lib/constants";
 import { httpError, readErrorMessage, readErrorStatus } from "@/lib/http";
 import {
@@ -21,7 +22,11 @@ import {
   type SignalListFilter,
 } from "@/lib/store";
 import { INTAKE_STATUSES } from "@/lib/types";
-import { decideMetricRefresh, readXMetricPatch } from "@/lib/xMetrics";
+import {
+  decideMetricRefresh,
+  readMetricsRefreshWindowDays,
+  readXMetricPatch,
+} from "@/lib/xMetrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +37,24 @@ function isListFilter(value: string): value is SignalListFilter {
     value === "queue" ||
     (INTAKE_STATUSES as readonly string[]).includes(value)
   );
+}
+
+/**
+ * 認証を通過したこの POST だけの公開日ウィンドウ。
+ * 省略時は undefined で、decideMetricRefresh の既定（14日）のまま。
+ */
+function readRequestMetricsWindowDays(body: unknown): number | undefined {
+  if (!body || typeof body !== "object") return undefined;
+  const parsed = readMetricsRefreshWindowDays(
+    (body as Record<string, unknown>).metricsRefreshWindowDays,
+  );
+  if (!parsed.ok) {
+    throw httpError(
+      `metricsRefreshWindowDays must be an integer from 1 to ${X_METRICS_REFRESH_WINDOW_CAP}`,
+      400,
+    );
+  }
+  return parsed.days;
 }
 
 function readItems(body: unknown): unknown[] {
@@ -120,6 +143,7 @@ export async function POST(request: Request) {
   try {
     assertIngestAuthorized(request);
     const body = await request.json();
+    const windowDays = readRequestMetricsWindowDays(body);
     const drafts = readItems(body).map(parseDraft);
     const saved = [];
     let refreshed = 0;
@@ -134,6 +158,7 @@ export async function POST(request: Request) {
           patch: draft.metrics,
           now,
           refreshedSoFar: refreshed,
+          windowDays,
         });
         if (decision === "refresh") {
           signal = await refreshStoredXMetrics(result.signal, draft.metrics);
