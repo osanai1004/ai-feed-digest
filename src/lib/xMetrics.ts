@@ -201,25 +201,32 @@ function byPublishedDesc(a: Article, b: Article): number {
   return b.publishedAt.localeCompare(a.publishedAt);
 }
 
-/** Xチャネルの期間内だけ並び替える。表示回数が無い記事は 0 扱いにせず後ろへ */
+/** 数値が無い記事は 0 扱いにせず後ろへ。同数は公開が新しい順 */
+function byMetricDesc(
+  a: Article,
+  b: Article,
+  key: "impressions" | "likes",
+): number {
+  const left = typeof a[key] === "number" ? a[key] : null;
+  const right = typeof b[key] === "number" ? b[key] : null;
+  if (left == null && right == null) return byPublishedDesc(a, b);
+  if (left == null) return 1;
+  if (right == null) return -1;
+  if (right !== left) return right - left;
+  return byPublishedDesc(a, b);
+}
+
+/** Xチャネルの期間内だけ並び替える。表示回数・いいねが無い記事は 0 扱いにせず後ろへ */
 export function sortXChannelArticles(
   articles: Article[],
   sort: XListSort,
 ): Article[] {
   const copy = [...articles];
-  if (sort !== "impressions") {
-    copy.sort(byPublishedDesc);
+  if (sort === "impressions" || sort === "likes") {
+    copy.sort((a, b) => byMetricDesc(a, b, sort));
     return copy;
   }
-  copy.sort((a, b) => {
-    const ai = typeof a.impressions === "number" ? a.impressions : null;
-    const bi = typeof b.impressions === "number" ? b.impressions : null;
-    if (ai == null && bi == null) return byPublishedDesc(a, b);
-    if (ai == null) return 1;
-    if (bi == null) return -1;
-    if (bi !== ai) return bi - ai;
-    return byPublishedDesc(a, b);
-  });
+  copy.sort(byPublishedDesc);
   return copy;
 }
 

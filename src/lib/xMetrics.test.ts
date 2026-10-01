@@ -18,6 +18,7 @@ function article(
   id: string,
   publishedAt: string,
   impressions?: number | null,
+  likes?: number | null,
 ): Article {
   return {
     id,
@@ -28,6 +29,7 @@ function article(
     createdAt: publishedAt,
     origin: "x",
     impressions: impressions ?? null,
+    likes: likes ?? null,
     summary: {
       general: { conclusion: "本文", detail: "", situations: ["1"], terms: [] },
       engineer: { conclusion: "本文", detail: "", situations: ["1"], terms: [] },
@@ -241,6 +243,25 @@ describe("X channel sort", () => {
     assert.deepEqual(
       sortXChannelArticles(items, "impressions").map((item) => item.id),
       ["old-high", "new-low", "new-zero", "mid-missing"],
+    );
+  });
+
+  it("sorts by likes descending and breaks ties by newer publishedAt", () => {
+    const items = [
+      article("old-many", "2026-09-01T00:00:00.000Z", 10, 50),
+      article("tie-newer", "2026-09-20T00:00:00.000Z", 1, 50),
+      article("new-few", "2026-10-01T00:00:00.000Z", 100, 2),
+      article("mid-missing", "2026-09-15T00:00:00.000Z", 5, null),
+      article("new-zero", "2026-09-30T00:00:00.000Z", 1, 0),
+    ];
+
+    assert.deepEqual(
+      sortXChannelArticles(items, "likes").map((item) => item.id),
+      ["tie-newer", "old-many", "new-few", "new-zero", "mid-missing"],
+    );
+    assert.deepEqual(
+      sortXChannelArticles(items, "latest").map((item) => item.id),
+      ["new-few", "new-zero", "tie-newer", "mid-missing", "old-many"],
     );
   });
 });

@@ -114,6 +114,7 @@ export const DEFAULT_ARTICLE_CHANNEL: ArticleChannel = "all";
 export const X_LIST_SORTS = [
   { slug: "latest", label: "新しい順" },
   { slug: "impressions", label: "表示回数" },
+  { slug: "likes", label: "いいね" },
 ] as const;
 
 export type XListSort = (typeof X_LIST_SORTS)[number]["slug"];
