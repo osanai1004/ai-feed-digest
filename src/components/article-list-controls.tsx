@@ -225,7 +225,7 @@ export function ArticleListControls({
         />
         <button
           type="submit"
-          className="shrink-0 rounded-2xl bg-[var(--accent)] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm transition hover:brightness-105"
+          className="min-h-11 shrink-0 rounded-2xl bg-[var(--accent)] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm transition hover:brightness-105 motion-reduce:transition-none"
         >
           検索
         </button>

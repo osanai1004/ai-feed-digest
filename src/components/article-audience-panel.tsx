@@ -43,7 +43,7 @@ export function ArticleAudiencePanel({ summary }: Props) {
   const hasDetail = Boolean(content.detail.trim());
 
   return (
-    <div className="mt-8">
+    <div className="mt-6">
       <AudienceTabs value={voice} onChange={handleChange} />
       <p className="mt-3 text-[13px] leading-6 text-[var(--body)]">
         {voice === "general"
@@ -73,11 +73,11 @@ export function ArticleAudiencePanel({ summary }: Props) {
         })}
       </div>
 
-      <section className="ui-panel mt-5 rounded-[var(--radius-card)] border border-[var(--hairline)] p-5 sm:p-6">
-        <h2 className="ui-section-label mb-3 text-[var(--accent-strong)]">
+      <section className="ui-panel mt-5 rounded-[var(--radius-card)] border border-[var(--hairline)] p-4 sm:p-5">
+        <h2 className="ui-section-label mb-2.5 text-[var(--accent-strong)]">
           結論
         </h2>
-        <div className="whitespace-pre-line text-[17px] leading-8 text-[var(--ink-soft)] sm:text-[18px]">
+        <div className="whitespace-pre-line text-[16px] leading-7 text-[var(--ink-soft)] sm:text-[17px]">
           {content.conclusion}
         </div>
       </section>
@@ -98,9 +98,9 @@ export function ArticleAudiencePanel({ summary }: Props) {
       ) : null}
 
       {!quick && hasDetail ? (
-        <section className="ui-panel mt-5 rounded-[var(--radius-card)] border border-[var(--hairline)] p-5 sm:p-6">
-          <h2 className="ui-section-label mb-3">詳細内容</h2>
-          <div className="whitespace-pre-line text-[16px] leading-8 text-[var(--ink-soft)]">
+        <section className="ui-panel mt-4 rounded-[var(--radius-card)] border border-[var(--hairline)] p-4 sm:p-5">
+          <h2 className="ui-section-label mb-2.5">詳細内容</h2>
+          <div className="whitespace-pre-line text-[15px] leading-7 text-[var(--ink-soft)]">
             {content.detail}
           </div>
         </section>
@@ -124,7 +124,7 @@ export function ArticleAudiencePanel({ summary }: Props) {
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[12px] font-extrabold text-[var(--accent-strong)]">
                   {index + 1}
                 </span>
-                <span className="min-w-0 flex-1 break-words pt-0.5 text-[15px] leading-7 text-[var(--ink-soft)]">
+                <span className="min-w-0 flex-1 break-words pt-0.5 text-[15px] leading-6 text-[var(--ink-soft)]">
                   {item}
                 </span>
               </li>

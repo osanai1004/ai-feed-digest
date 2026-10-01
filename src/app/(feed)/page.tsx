@@ -43,23 +43,25 @@ export default async function HomePage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">
-      <HomeHero
-        lastUpdatedAt={latestCreatedAt(articles)}
-        memoCount={memos.length}
-      />
+      <div className="home-mast">
+        <HomeHero
+          lastUpdatedAt={latestCreatedAt(articles)}
+          memoCount={memos.length}
+        />
 
-      <ArticleListControls
-        q={query.q}
-        channel={query.channel}
-        category={query.category}
-        genre={query.genre}
-        window={query.window}
-        sort={query.sort}
-        categories={categories}
-        genres={genres}
-        resultCount={filtered.length}
-        totalCount={inChannel.length}
-      />
+        <ArticleListControls
+          q={query.q}
+          channel={query.channel}
+          category={query.category}
+          genre={query.genre}
+          window={query.window}
+          sort={query.sort}
+          categories={categories}
+          genres={genres}
+          resultCount={filtered.length}
+          totalCount={inChannel.length}
+        />
+      </div>
 
       <ArticleListView articles={listed} query={query} />
     </main>
