@@ -56,8 +56,11 @@ function MetricBadge({
   );
 }
 
-/** 数値が無い項目は出さない。0 は実数として出す。表示回数だけ大きく出す */
-export function XEngagementMeta({ article, className = "pl-2.5" }: Props) {
+/**
+ * 数値が無い項目は出さない。0 は実数として出す。表示回数だけ大きく出す。
+ * 公開日と同じメタ行に置く。操作ボタンの横には置かない。
+ */
+export function XEngagementMeta({ article, className = "" }: Props) {
   if (article.origin !== "x") return null;
   const parts = FIELDS.flatMap((field) => {
     const value = article[field.key];
@@ -67,7 +70,7 @@ export function XEngagementMeta({ article, className = "pl-2.5" }: Props) {
   if (parts.length === 0) return null;
 
   return (
-    <div className={`ui-metric-row mt-3 ${className}`}>
+    <div className={`ui-metric-row ${className}`.trim()}>
       {parts.map((part) => (
         <MetricBadge
           key={part.key}

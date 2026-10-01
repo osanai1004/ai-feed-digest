@@ -43,19 +43,20 @@ export function ArticleDetail({ article }: Props) {
           {article.origin === "x" && article.source.trim().toLowerCase() !== "x" ? (
             <XSignalBadge />
           ) : null}
-          <time
-            dateTime={article.publishedAt}
-            className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
-          >
-            {formatDate(article.publishedAt, "long")}
-          </time>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            <time
+              dateTime={article.publishedAt}
+              className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
+            >
+              {formatDate(article.publishedAt, "long")}
+            </time>
+            <XEngagementMeta article={article} />
+          </div>
         </div>
 
         <h1 className="font-display max-w-2xl break-words text-[30px] leading-[1.12] font-black tracking-[-0.035em] sm:text-[42px]">
           {article.title}
         </h1>
-
-        <XEngagementMeta article={article} className="" />
 
         <div
           className="animate-accent-draw mt-4 h-[3px] w-14 rounded-full bg-[var(--accent)]"

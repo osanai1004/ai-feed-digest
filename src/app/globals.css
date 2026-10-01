@@ -282,6 +282,8 @@ a {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .ui-metric-hero {

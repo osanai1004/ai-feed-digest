@@ -98,12 +98,15 @@ export function ArticleCard({
           ) : null}
           {read ? <Chip tone="soft">既読</Chip> : null}
         </div>
-        <time
-          dateTime={article.publishedAt}
-          className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
-        >
-          {formatDate(article.publishedAt, "short")}
-        </time>
+        <div className="flex max-w-full flex-wrap items-center gap-x-2.5 gap-y-1.5">
+          <time
+            dateTime={article.publishedAt}
+            className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
+          >
+            {formatDate(article.publishedAt, "short")}
+          </time>
+          <XEngagementMeta article={article} />
+        </div>
       </div>
       <h2 className="font-display min-w-0 break-words pl-2.5 text-[21px] leading-snug font-bold tracking-[-0.025em] sm:text-[24px]">
         <Link
@@ -116,7 +119,6 @@ export function ArticleCard({
       <p className="mt-3 line-clamp-2 break-words pl-2.5 text-[14px] leading-7 text-[var(--body)]">
         {toSingleLine(article.summary.general.conclusion)}
       </p>
-      <XEngagementMeta article={article} />
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pl-2.5">
         <div className="relative z-10 flex flex-wrap items-center gap-2">
           <button
