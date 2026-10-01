@@ -2,12 +2,14 @@ import { formatDate } from "@/lib/formatDate";
 import type { Article } from "@/lib/types";
 import { formatMetricCount } from "@/lib/xMetrics";
 
-type Props = {
-  article: Pick<
-    Article,
-    "origin" | "impressions" | "reposts" | "likes" | "metricsUpdatedAt"
-  >;
+type EngagementProps = {
+  article: Pick<Article, "origin" | "impressions" | "reposts" | "likes">;
   className?: string;
+};
+
+type PublishProps = {
+  article: Pick<Article, "origin" | "publishedAt" | "metricsUpdatedAt">;
+  dateStyle: "short" | "long";
 };
 
 const FIELDS = [
@@ -56,8 +58,42 @@ function MetricBadge({
   );
 }
 
+function MetricsUpdatedCue({
+  article,
+}: {
+  article: Pick<Article, "origin" | "metricsUpdatedAt">;
+}) {
+  if (article.origin !== "x" || !article.metricsUpdatedAt) return null;
+  return (
+    <time
+      dateTime={article.metricsUpdatedAt}
+      className="ui-metric-updated whitespace-nowrap"
+    >
+      数値更新 {metricUpdatedLabel(article.metricsUpdatedAt)}
+    </time>
+  );
+}
+
+/** 公開日の直後に、指標を最後に書いた時刻だけを並べる */
+export function ArticlePublishMeta({ article, dateStyle }: PublishProps) {
+  return (
+    <div className="flex max-w-full flex-wrap items-baseline gap-x-2">
+      <time
+        dateTime={article.publishedAt}
+        className="shrink-0 text-[12px] font-semibold text-[var(--mute)]"
+      >
+        {formatDate(article.publishedAt, dateStyle)}
+      </time>
+      <MetricsUpdatedCue article={article} />
+    </div>
+  );
+}
+
 /** 数値が無い項目は出さない。0 は実数として出す。表示回数だけ大きく出す */
-export function XEngagementMeta({ article, className = "pl-2.5" }: Props) {
+export function XEngagementMeta({
+  article,
+  className = "pl-2.5",
+}: EngagementProps) {
   if (article.origin !== "x") return null;
   const parts = FIELDS.flatMap((field) => {
     const value = article[field.key];
@@ -76,14 +112,6 @@ export function XEngagementMeta({ article, className = "pl-2.5" }: Props) {
           hero={part.hero}
         />
       ))}
-      {article.metricsUpdatedAt ? (
-        <time
-          dateTime={article.metricsUpdatedAt}
-          className="ui-metric-updated"
-        >
-          数値更新 {metricUpdatedLabel(article.metricsUpdatedAt)}
-        </time>
-      ) : null}
     </div>
   );
 }
