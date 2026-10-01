@@ -34,11 +34,14 @@
   --bg-glow-3: rgba(255, 255, 255, 0.8);
   --background: var(--canvas);
   --foreground: var(--ink);
-  --hero-wash: linear-gradient(
+  /* ヘッダーからフィルター最下段まで一枚で薄くする。行ごとに切らない */
+  --mast-wash: linear-gradient(
     180deg,
-    rgba(191, 219, 254, 0.55) 0%,
-    rgba(238, 243, 247, 0.2) 55%,
-    transparent 100%
+    rgba(191, 219, 254, 0.58) 0%,
+    rgba(191, 219, 254, 0.34) 26%,
+    rgba(186, 214, 252, 0.2) 52%,
+    rgba(186, 214, 252, 0.12) 78%,
+    rgba(238, 243, 247, 0) 100%
   );
 }
 
@@ -74,11 +77,13 @@
   --bg-glow-3: rgba(15, 23, 42, 0.4);
   --background: var(--canvas);
   --foreground: var(--ink);
-  --hero-wash: linear-gradient(
+  --mast-wash: linear-gradient(
     180deg,
-    rgba(30, 64, 120, 0.55) 0%,
-    rgba(11, 17, 24, 0.15) 55%,
-    transparent 100%
+    rgba(30, 64, 120, 0.62) 0%,
+    rgba(30, 64, 120, 0.34) 28%,
+    rgba(24, 52, 100, 0.18) 54%,
+    rgba(20, 42, 84, 0.1) 80%,
+    rgba(11, 17, 24, 0) 100%
   );
 }
 
@@ -214,15 +219,29 @@ a {
   backdrop-filter: none;
 }
 
-.ui-hero::before {
+.home-mast {
+  position: relative;
+  isolation: isolate;
+}
+
+.home-mast::before {
   content: "";
   position: absolute;
-  inset: -1.5rem -1.25rem auto;
-  height: min(52vh, 420px);
   z-index: -1;
   pointer-events: none;
-  background: var(--hero-wash);
-  mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
+  top: -1.25rem;
+  right: -1rem;
+  bottom: 0;
+  left: -1rem;
+  background: var(--mast-wash);
+}
+
+@media (min-width: 640px) {
+  .home-mast::before {
+    top: -1.75rem;
+    right: -1.5rem;
+    left: -1.5rem;
+  }
 }
 
 .ui-detail-shell {
