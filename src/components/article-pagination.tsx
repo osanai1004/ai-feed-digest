@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { buildListHref } from "@/lib/articleFilters";
+import type { ListWindow } from "@/lib/constants";
 
 type Props = {
   q: string;
   category: string;
   genre: string;
+  window: ListWindow;
   page: number;
   totalPages: number;
   total: number;
@@ -48,6 +50,7 @@ export function ArticlePagination({
   q,
   category,
   genre,
+  window,
   page,
   totalPages,
   total,
@@ -56,11 +59,11 @@ export function ArticlePagination({
 
   const prevHref =
     page > 1
-      ? buildListHref({ q, category, genre, page: page - 1 })
+      ? buildListHref({ q, category, genre, window, page: page - 1 })
       : null;
   const nextHref =
     page < totalPages
-      ? buildListHref({ q, category, genre, page: page + 1 })
+      ? buildListHref({ q, category, genre, window, page: page + 1 })
       : null;
 
   const items = pageWindow(page, totalPages);
@@ -117,6 +120,7 @@ export function ArticlePagination({
                       q,
                       category,
                       genre,
+                      window,
                       page: item,
                     })}
                     className="inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[var(--hairline)] bg-[var(--card)] px-2 text-[12px] font-bold text-[var(--ink-soft)] transition hover:-translate-y-0.5"

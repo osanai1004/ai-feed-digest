@@ -1,12 +1,29 @@
+import { createHash } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { neon } from "@neondatabase/serverless";
+import { INTAKE_QUEUE_STATUSES, OFFICIAL_CONFIRMATION_NOTE } from "./constants";
+import { httpError } from "./http";
+import {
+  applyIntakeAction,
+  canonicalHttpUrl,
+  canResubmitSignal,
+  coarseFilterText,
+} from "./intake";
 import { SEED_ARTICLES } from "./seed";
 import { normalizeArticleSummary } from "./summary";
-import type { Article, IngestPayload } from "./types";
+import type {
+  Article,
+  IngestPayload,
+  IntakeAction,
+  IntakeSignal,
+  IntakeStatus,
+} from "./types";
+import { INTAKE_STATUSES } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "articles.json");
+const SIGNALS_FILE = path.join(DATA_DIR, "signals.json");
 
 function hasDatabaseUrl() {
   return Boolean(process.env.DATABASE_URL?.trim());
@@ -36,27 +53,61 @@ async function ensureSchema() {
     ALTER TABLE articles
     ADD COLUMN IF NOT EXISTS summary_json JSONB
   `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS origin TEXT NOT NULL DEFAULT 'rss'
+  `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS x_post_url TEXT
+  `;
+  await sql`
+    ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS official_note TEXT
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS intake_signals (
+      id TEXT PRIMARY KEY,
+      x_post_url TEXT NOT NULL UNIQUE,
+      source TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      author TEXT,
+      published_at TIMESTAMPTZ,
+      status TEXT NOT NULL,
+      filter_reason TEXT,
+      official_url TEXT,
+      factcheck_note TEXT,
+      article_id TEXT,
+      updated_by TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 }
 
-function normalizeArticle(article: Article): Article {
+function presentArticle(article: Article): Article {
   return {
     ...article,
     title: article.title.trim(),
     summary: normalizeArticleSummary(article.summary),
+    origin: article.origin === "x" ? "x" : "rss",
+    xPostUrl: article.xPostUrl?.trim() || null,
+    officialNote: article.officialNote?.trim() || null,
   };
 }
 
 function readLocalArticles(): Article[] {
-  if (!existsSync(DATA_FILE)) return SEED_ARTICLES.map(normalizeArticle);
+  if (!existsSync(DATA_FILE)) return SEED_ARTICLES.map(presentArticle);
   try {
     const raw = readFileSync(DATA_FILE, "utf8");
     const parsed = JSON.parse(raw) as Article[];
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      return SEED_ARTICLES.map(normalizeArticle);
+      return SEED_ARTICLES.map(presentArticle);
     }
-    return parsed.map(normalizeArticle);
+    return parsed.map(presentArticle);
   } catch {
-    return SEED_ARTICLES.map(normalizeArticle);
+    return SEED_ARTICLES.map(presentArticle);
   }
 }
 
@@ -75,6 +126,18 @@ function makeId(source: string, url: string) {
   return `a_${Math.abs(hash)}`;
 }
 
+function makeSignalId(xPostUrl: string) {
+  const key = canonicalHttpUrl(xPostUrl) ?? xPostUrl.trim();
+  const hash = createHash("sha256").update(key).digest("hex").slice(0, 16);
+  return `s_${hash}`;
+}
+
+function isoFrom(value: unknown, fallback: string) {
+  const date = new Date(String(value ?? ""));
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toISOString();
+}
+
 function mapArticleRow(row: Record<string, unknown>): Article {
   const summaryJson = row.summary_json;
   const summary =
@@ -87,17 +150,81 @@ function mapArticleRow(row: Record<string, unknown>): Article {
             : JSON.parse(String(row.situations ?? "[]")),
         });
 
-  return {
+  return presentArticle({
     id: String(row.id),
     source: String(row.source),
     title: String(row.title),
     url: String(row.url),
-    publishedAt: new Date(
-      String(row.published_at ?? row.created_at),
-    ).toISOString(),
+    publishedAt: isoFrom(row.published_at ?? row.created_at, new Date().toISOString()),
     summary,
-    createdAt: new Date(String(row.created_at)).toISOString(),
+    createdAt: isoFrom(row.created_at, new Date().toISOString()),
+    origin: row.origin === "x" ? "x" : "rss",
+    xPostUrl: row.x_post_url ? String(row.x_post_url) : null,
+    officialNote: row.official_note ? String(row.official_note) : null,
+  });
+}
+
+function isIntakeStatus(value: unknown): value is IntakeStatus {
+  return (
+    typeof value === "string" &&
+    (INTAKE_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+function presentSignal(signal: IntakeSignal): IntakeSignal | null {
+  if (!isIntakeStatus(signal.status)) return null;
+  if (!signal.id || !signal.xPostUrl || !signal.body) return null;
+  return {
+    ...signal,
+    source: signal.source.trim() || "X",
+    title: signal.title.trim(),
+    body: signal.body.trim(),
+    author: signal.author?.trim() || null,
+    officialUrl: signal.officialUrl?.trim() || null,
+    filterReason: signal.filterReason?.trim() || null,
+    factcheckNote: signal.factcheckNote?.trim() || null,
+    articleId: signal.articleId?.trim() || null,
+    updatedBy: signal.updatedBy?.trim() || null,
   };
+}
+
+function mapSignalRow(row: Record<string, unknown>): IntakeSignal | null {
+  const createdAt = isoFrom(row.created_at, new Date().toISOString());
+  return presentSignal({
+    id: String(row.id),
+    xPostUrl: String(row.x_post_url),
+    source: String(row.source),
+    title: String(row.title),
+    body: String(row.body),
+    author: row.author ? String(row.author) : null,
+    publishedAt: isoFrom(row.published_at ?? row.created_at, createdAt),
+    status: row.status as IntakeStatus,
+    filterReason: row.filter_reason ? String(row.filter_reason) : null,
+    officialUrl: row.official_url ? String(row.official_url) : null,
+    factcheckNote: row.factcheck_note ? String(row.factcheck_note) : null,
+    articleId: row.article_id ? String(row.article_id) : null,
+    updatedBy: row.updated_by ? String(row.updated_by) : null,
+    createdAt,
+    updatedAt: isoFrom(row.updated_at ?? row.created_at, createdAt),
+  });
+}
+
+function readLocalSignals(): IntakeSignal[] {
+  if (!existsSync(SIGNALS_FILE)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(SIGNALS_FILE, "utf8")) as IntakeSignal[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => presentSignal(item))
+      .filter((item): item is IntakeSignal => Boolean(item));
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSignals(signals: IntakeSignal[]) {
+  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  writeFileSync(SIGNALS_FILE, JSON.stringify(signals, null, 2), "utf8");
 }
 
 export async function listArticles(): Promise<Article[]> {
@@ -111,12 +238,12 @@ export async function listArticles(): Promise<Article[]> {
   const sql = sqlClient();
   const rows = await sql`
     SELECT id, source, title, url, published_at, conclusion, situations,
-           summary_json, created_at
+           summary_json, created_at, origin, x_post_url, official_note
     FROM articles
     ORDER BY COALESCE(published_at, created_at) DESC
   `;
 
-  if (rows.length === 0) return SEED_ARTICLES.map(normalizeArticle);
+  if (rows.length === 0) return SEED_ARTICLES.map(presentArticle);
 
   return rows.map((row) => mapArticleRow(row as Record<string, unknown>));
 }
@@ -126,35 +253,66 @@ export async function getArticle(id: string): Promise<Article | null> {
   return articles.find((a) => a.id === id) ?? null;
 }
 
+function mergeArticle(existing: Article | undefined, incoming: Article): Article {
+  if (!existing) return incoming;
+  const keepX = existing.origin === "x" || incoming.origin === "x";
+  return presentArticle({
+    ...incoming,
+    origin: keepX ? "x" : "rss",
+    xPostUrl: incoming.xPostUrl || existing.xPostUrl || null,
+    officialNote: incoming.officialNote || existing.officialNote || null,
+    createdAt: existing.createdAt,
+  });
+}
+
+function parseTime(value: string | undefined, fallback: string) {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toISOString();
+}
+
 export async function upsertArticle(payload: IngestPayload): Promise<Article> {
   const summary = normalizeArticleSummary(payload.summary);
   const now = new Date().toISOString();
-  const article: Article = {
+  const origin = payload.origin === "x" ? "x" : "rss";
+  const article = presentArticle({
     id: makeId(payload.source, payload.url),
     source: payload.source.trim(),
     title: payload.title.trim(),
     url: payload.url.trim(),
-    publishedAt: payload.publishedAt
-      ? new Date(payload.publishedAt).toISOString()
-      : now,
+    publishedAt: parseTime(payload.publishedAt, now),
     summary,
     createdAt: now,
-  };
+    origin,
+    xPostUrl: origin === "x" ? payload.xPostUrl?.trim() || null : null,
+    officialNote:
+      origin === "x"
+        ? payload.officialNote?.trim() || OFFICIAL_CONFIRMATION_NOTE
+        : null,
+  });
 
   if (!hasDatabaseUrl()) {
-    const current = readLocalArticles().filter((a) => a.url !== article.url);
-    current.unshift(article);
-    writeLocalArticles(current);
-    return article;
+    const current = readLocalArticles();
+    const existing = current.find((item) => item.url === article.url);
+    const merged = mergeArticle(existing, article);
+    const next = [
+      merged,
+      ...current.filter((item) => item.url !== article.url),
+    ];
+    writeLocalArticles(next);
+    return merged;
   }
 
   await ensureSchema();
   const sql = sqlClient();
   // conclusion / situations は一覧互換のため general を冗長保存
+  // RSS の再取り込みで、すでに付いている X のリンクを消さない
   await sql`
     INSERT INTO articles (
       id, source, title, url, published_at,
-      conclusion, situations, summary_json, created_at
+      conclusion, situations, summary_json, created_at,
+      origin, x_post_url, official_note
     )
     VALUES (
       ${article.id},
@@ -165,7 +323,10 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
       ${article.summary.general.conclusion},
       ${JSON.stringify(article.summary.general.situations)}::jsonb,
       ${JSON.stringify(article.summary)}::jsonb,
-      ${article.createdAt}
+      ${article.createdAt},
+      ${article.origin ?? "rss"},
+      ${article.xPostUrl},
+      ${article.officialNote}
     )
     ON CONFLICT (url) DO UPDATE SET
       source = EXCLUDED.source,
@@ -173,8 +334,328 @@ export async function upsertArticle(payload: IngestPayload): Promise<Article> {
       published_at = EXCLUDED.published_at,
       conclusion = EXCLUDED.conclusion,
       situations = EXCLUDED.situations,
-      summary_json = EXCLUDED.summary_json
+      summary_json = EXCLUDED.summary_json,
+      origin = CASE
+        WHEN EXCLUDED.origin = 'x' OR articles.origin = 'x' THEN 'x'
+        ELSE 'rss'
+      END,
+      x_post_url = COALESCE(EXCLUDED.x_post_url, articles.x_post_url),
+      official_note = COALESCE(EXCLUDED.official_note, articles.official_note)
   `;
 
-  return article;
+  const stored = await sql`
+    SELECT id, source, title, url, published_at, conclusion, situations,
+           summary_json, created_at, origin, x_post_url, official_note
+    FROM articles
+    WHERE url = ${article.url}
+    LIMIT 1
+  `;
+  if (!stored[0]) return article;
+  return mapArticleRow(stored[0] as Record<string, unknown>);
+}
+
+export type IncomingSignalDraft = {
+  xPostUrl: string;
+  source: string;
+  title: string;
+  body: string;
+  author: string | null;
+  publishedAt: string;
+};
+
+export type SavedSignal = {
+  signal: IntakeSignal;
+  duplicate: boolean;
+};
+
+function buildSignal(
+  draft: IncomingSignalDraft,
+  existing: IntakeSignal | undefined,
+  now: string,
+): IntakeSignal {
+  const reason = coarseFilterText(draft.body);
+  return {
+    id: existing?.id ?? makeSignalId(draft.xPostUrl),
+    xPostUrl: draft.xPostUrl.trim(),
+    source: draft.source.trim() || "X",
+    title: draft.title.trim(),
+    body: draft.body.trim(),
+    author: draft.author,
+    publishedAt: draft.publishedAt,
+    status: reason ? "filtered" : "pending_review",
+    filterReason: reason,
+    officialUrl: null,
+    factcheckNote: null,
+    articleId: null,
+    updatedBy: null,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+}
+
+export async function saveIncomingSignal(
+  draft: IncomingSignalDraft,
+): Promise<SavedSignal> {
+  const now = new Date().toISOString();
+  const xPostUrl = canonicalHttpUrl(draft.xPostUrl);
+  if (!xPostUrl) throw httpError("Invalid X post URL", 400);
+  const normalized: IncomingSignalDraft = { ...draft, xPostUrl };
+
+  if (!hasDatabaseUrl()) {
+    const current = readLocalSignals();
+    const existing = current.find(
+      (item) => (canonicalHttpUrl(item.xPostUrl) ?? item.xPostUrl) === xPostUrl,
+    );
+    if (existing && !canResubmitSignal(existing.status)) {
+      return { signal: existing, duplicate: true };
+    }
+    const signal = buildSignal(normalized, existing, now);
+    const next = [
+      signal,
+      ...current.filter((item) => item.id !== signal.id),
+    ];
+    writeLocalSignals(next);
+    return { signal, duplicate: false };
+  }
+
+  await ensureSchema();
+  const sql = sqlClient();
+  const rows = await sql`
+    SELECT id, x_post_url, source, title, body, author, published_at, status,
+           filter_reason, official_url, factcheck_note, article_id, updated_by,
+           created_at, updated_at
+    FROM intake_signals
+    WHERE x_post_url = ${xPostUrl}
+    LIMIT 1
+  `;
+  const existing = rows[0]
+    ? mapSignalRow(rows[0] as Record<string, unknown>)
+    : null;
+  if (existing && !canResubmitSignal(existing.status)) {
+    return { signal: existing, duplicate: true };
+  }
+
+  const signal = buildSignal(normalized, existing ?? undefined, now);
+  await sql`
+    INSERT INTO intake_signals (
+      id, x_post_url, source, title, body, author, published_at, status,
+      filter_reason, official_url, factcheck_note, article_id, updated_by,
+      created_at, updated_at
+    )
+    VALUES (
+      ${signal.id},
+      ${signal.xPostUrl},
+      ${signal.source},
+      ${signal.title},
+      ${signal.body},
+      ${signal.author},
+      ${signal.publishedAt},
+      ${signal.status},
+      ${signal.filterReason},
+      ${signal.officialUrl},
+      ${signal.factcheckNote},
+      ${signal.articleId},
+      ${signal.updatedBy},
+      ${signal.createdAt},
+      ${signal.updatedAt}
+    )
+    ON CONFLICT (x_post_url) DO UPDATE SET
+      source = EXCLUDED.source,
+      title = EXCLUDED.title,
+      body = EXCLUDED.body,
+      author = EXCLUDED.author,
+      published_at = EXCLUDED.published_at,
+      status = EXCLUDED.status,
+      filter_reason = EXCLUDED.filter_reason,
+      official_url = EXCLUDED.official_url,
+      factcheck_note = EXCLUDED.factcheck_note,
+      article_id = EXCLUDED.article_id,
+      updated_by = EXCLUDED.updated_by,
+      updated_at = EXCLUDED.updated_at
+    WHERE intake_signals.status IN ('filtered', 'rejected')
+  `;
+  const storedRows = await sql`
+    SELECT id, x_post_url, source, title, body, author, published_at, status,
+           filter_reason, official_url, factcheck_note, article_id, updated_by,
+           created_at, updated_at
+    FROM intake_signals
+    WHERE x_post_url = ${xPostUrl}
+    LIMIT 1
+  `;
+  const stored = storedRows[0]
+    ? mapSignalRow(storedRows[0] as Record<string, unknown>)
+    : null;
+  if (!stored) return { signal, duplicate: false };
+  const wrote =
+    stored.status === signal.status && stored.body === signal.body;
+  if (!wrote && !canResubmitSignal(stored.status)) {
+    return { signal: stored, duplicate: true };
+  }
+  return { signal: stored, duplicate: false };
+}
+
+export type SignalListFilter = IntakeStatus | "all" | "queue";
+
+function matchesFilter(signal: IntakeSignal, filter: SignalListFilter) {
+  if (filter === "all") return true;
+  if (filter === "queue") {
+    return (INTAKE_QUEUE_STATUSES as readonly string[]).includes(signal.status);
+  }
+  return signal.status === filter;
+}
+
+export async function listSignals(
+  filter: SignalListFilter = "queue",
+): Promise<IntakeSignal[]> {
+  if (!hasDatabaseUrl()) {
+    return readLocalSignals()
+      .filter((signal) => matchesFilter(signal, filter))
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  }
+
+  await ensureSchema();
+  const sql = sqlClient();
+  const rows =
+    filter === "all"
+      ? await sql`
+          SELECT id, x_post_url, source, title, body, author, published_at, status,
+                 filter_reason, official_url, factcheck_note, article_id, updated_by,
+                 created_at, updated_at
+          FROM intake_signals
+          ORDER BY created_at DESC
+        `
+      : filter === "queue"
+        ? await sql`
+            SELECT id, x_post_url, source, title, body, author, published_at, status,
+                   filter_reason, official_url, factcheck_note, article_id, updated_by,
+                   created_at, updated_at
+            FROM intake_signals
+            WHERE status IN ('pending_review', 'needs_factcheck', 'ready')
+            ORDER BY created_at DESC
+          `
+        : await sql`
+            SELECT id, x_post_url, source, title, body, author, published_at, status,
+                   filter_reason, official_url, factcheck_note, article_id, updated_by,
+                   created_at, updated_at
+            FROM intake_signals
+            WHERE status = ${filter}
+            ORDER BY created_at DESC
+          `;
+
+  return rows
+    .map((row) => mapSignalRow(row as Record<string, unknown>))
+    .filter((item): item is IntakeSignal => Boolean(item));
+}
+
+export async function listMemos(): Promise<IntakeSignal[]> {
+  return listSignals("memo");
+}
+
+export async function getSignal(id: string): Promise<IntakeSignal | null> {
+  if (!hasDatabaseUrl()) {
+    return readLocalSignals().find((signal) => signal.id === id) ?? null;
+  }
+  await ensureSchema();
+  const sql = sqlClient();
+  const rows = await sql`
+    SELECT id, x_post_url, source, title, body, author, published_at, status,
+           filter_reason, official_url, factcheck_note, article_id, updated_by,
+           created_at, updated_at
+    FROM intake_signals
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  return mapSignalRow(rows[0] as Record<string, unknown>);
+}
+
+async function writeSignal(signal: IntakeSignal): Promise<IntakeSignal> {
+  if (!hasDatabaseUrl()) {
+    const current = readLocalSignals();
+    const next = [
+      signal,
+      ...current.filter((item) => item.id !== signal.id),
+    ];
+    writeLocalSignals(next);
+    return signal;
+  }
+
+  await ensureSchema();
+  const sql = sqlClient();
+  await sql`
+    UPDATE intake_signals SET
+      status = ${signal.status},
+      filter_reason = ${signal.filterReason},
+      official_url = ${signal.officialUrl},
+      factcheck_note = ${signal.factcheckNote},
+      article_id = ${signal.articleId},
+      updated_by = ${signal.updatedBy},
+      updated_at = ${signal.updatedAt}
+    WHERE id = ${signal.id}
+  `;
+  return signal;
+}
+
+export async function decideSignal(input: {
+  id: string;
+  action: IntakeAction;
+  officialUrl: string | null;
+  note: string | null;
+  actor: string | null;
+}): Promise<IntakeSignal> {
+  const current = await getSignal(input.id);
+  if (!current) throw httpError("Signal not found", 404);
+
+  const applied = applyIntakeAction({
+    status: current.status,
+    action: input.action,
+    officialUrl: input.officialUrl,
+  });
+  if (!applied.ok) throw httpError(applied.error, 400);
+
+  const now = new Date().toISOString();
+  return writeSignal({
+    ...current,
+    status: applied.decision.status,
+    officialUrl: applied.decision.officialUrl,
+    filterReason:
+      applied.decision.status === "pending_review" ? null : current.filterReason,
+    factcheckNote: input.note ?? current.factcheckNote,
+    updatedBy: input.actor,
+    updatedAt: now,
+  });
+}
+
+export async function markSignalIngested(
+  signalId: string,
+  articleId: string,
+  officialUrl: string,
+): Promise<IntakeSignal> {
+  const current = await getSignal(signalId);
+  if (!current) throw httpError("Signal not found", 404);
+
+  const expected = current.officialUrl
+    ? canonicalHttpUrl(current.officialUrl)
+    : null;
+  const actual = canonicalHttpUrl(officialUrl);
+  if (!expected || !actual || expected !== actual) {
+    throw httpError("Official URL does not match the approved signal", 409);
+  }
+
+  if (current.status === "ingested") {
+    if (current.articleId && current.articleId !== articleId) {
+      throw httpError("Signal is already linked to another article", 409);
+    }
+    return current;
+  }
+  if (current.status !== "ready") {
+    throw httpError("Signal is not ready for ingest", 409);
+  }
+
+  return writeSignal({
+    ...current,
+    status: "ingested",
+    articleId,
+    updatedAt: new Date().toISOString(),
+  });
 }

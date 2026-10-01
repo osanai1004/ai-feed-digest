@@ -31,6 +31,9 @@ export type ArticleSummary = {
   engineer: AudienceSummary;
 };
 
+/** rss: 公式フィード由来。x: Xの投稿を人が確認し、公式URL付きで記事化したもの */
+export type ArticleOrigin = "rss" | "x";
+
 export type Article = {
   id: string;
   source: string;
@@ -39,6 +42,12 @@ export type Article = {
   publishedAt: string;
   summary: ArticleSummary;
   createdAt: string;
+  /** 省略時は rss */
+  origin?: ArticleOrigin;
+  /** origin が x のとき、きっかけになった投稿の URL */
+  xPostUrl?: string | null;
+  /** origin が x のとき、公式一次情報がある旨の注記 */
+  officialNote?: string | null;
 };
 
 /** 旧形式（単一ボイス）も ingest で受け付ける */
@@ -53,4 +62,55 @@ export type IngestPayload = {
   url: string;
   publishedAt?: string;
   summary: ArticleSummary | LegacyArticleSummary;
+  /** 省略時は rss。x のときは url を公式一次情報、xPostUrl を投稿にする */
+  origin?: ArticleOrigin;
+  xPostUrl?: string;
+  officialNote?: string;
+  /** ready の X 候補を記事に紐付ける */
+  signalId?: string;
+};
+
+/** X候補の進行状態（記事そのものではない） */
+export const INTAKE_STATUSES = [
+  "filtered",
+  "pending_review",
+  "needs_factcheck",
+  "ready",
+  "memo",
+  "rejected",
+  "ingested",
+] as const;
+
+export type IntakeStatus = (typeof INTAKE_STATUSES)[number];
+
+export const INTAKE_ACTIONS = [
+  "approve",
+  "reject",
+  "flag_factcheck",
+  "resolve_factcheck",
+  "restore",
+] as const;
+
+export type IntakeAction = (typeof INTAKE_ACTIONS)[number];
+
+/**
+ * ブラウザで拾った X 投稿。
+ * API 取得はせず、浅子が本文と URL を渡す。
+ */
+export type IntakeSignal = {
+  id: string;
+  xPostUrl: string;
+  source: string;
+  title: string;
+  body: string;
+  author: string | null;
+  publishedAt: string;
+  status: IntakeStatus;
+  filterReason: string | null;
+  officialUrl: string | null;
+  factcheckNote: string | null;
+  articleId: string | null;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 };

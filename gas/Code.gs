@@ -13,6 +13,9 @@
  *    - GEMINI_MODEL   : (任意) 既定 gemini-3.5-flash-lite
  * 4. runOnce を手動実行して認可
  * 5. createDailyTrigger を実行
+ *
+ * X の投稿はここでは取得しない。
+ * 浅子が /api/intake に渡して承認した候補だけ、ingestReadyXSignals が公式ページを要約する。
  */
 
 var FEEDS = [
@@ -222,6 +225,124 @@ function createDailyTrigger() {
     if (t.getHandlerFunction() === "runOnce") ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger("runOnce").timeBased().everyDays(1).atHour(8).create();
+}
+
+/**
+ * 人が承認し、公式URL付きで ready になった X 候補だけを要約して取り込む。
+ * X / Twitter の URL は取得しない。根拠は公式ページの本文。
+ */
+function ingestReadyXSignals() {
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty("GOOGLE_API_KEY");
+  var ingestUrl = props.getProperty("INGEST_URL");
+  var ingestSecret = props.getProperty("INGEST_SECRET");
+  var appBaseUrl = props.getProperty("APP_BASE_URL");
+  var geminiModel = props.getProperty("GEMINI_MODEL") || DEFAULT_GEMINI_MODEL;
+
+  if (!apiKey || !ingestUrl || !ingestSecret || !appBaseUrl) {
+    throw new Error(
+      "GOOGLE_API_KEY / INGEST_URL / INGEST_SECRET / APP_BASE_URL を設定してください",
+    );
+  }
+
+  var listUrl = appBaseUrl.replace(/\/$/, "") + "/api/intake?status=ready";
+  var listed = UrlFetchApp.fetch(listUrl, {
+    method: "get",
+    headers: { Authorization: "Bearer " + ingestSecret },
+    muteHttpExceptions: true,
+  });
+  if (listed.getResponseCode() >= 300) {
+    throw new Error(
+      "ready list failed: " + listed.getResponseCode() + " " + listed.getContentText(),
+    );
+  }
+
+  var data = JSON.parse(listed.getContentText());
+  var signals = data.signals || [];
+  var ingested = 0;
+  var errors = [];
+
+  signals.forEach(function (signal) {
+    try {
+      assertOfficialPageUrl_(signal.officialUrl);
+      var officialText = fetchOfficialPageText_(signal.officialUrl);
+      if (!officialText) {
+        throw new Error("official page was empty");
+      }
+      var summary = summarizeWithGemini_(
+        apiKey,
+        geminiModel,
+        signal.source || "X",
+        signal.title,
+        "公式ページ（事実の根拠）:\n" +
+          officialText +
+          "\n\nXの投稿（きっかけ。公式ページと矛盾する場合は公式を優先し、推測で埋めない）:\n" +
+          String(signal.body || "").slice(0, 4000),
+      );
+      postIngest_(ingestUrl, ingestSecret, {
+        source: signal.source || "X",
+        title: summary.title || signal.title,
+        url: signal.officialUrl,
+        publishedAt: signal.publishedAt || new Date().toISOString(),
+        origin: "x",
+        xPostUrl: signal.xPostUrl,
+        officialNote: "公式もこう言っている",
+        signalId: signal.id,
+        summary: {
+          general: summary.general,
+          engineer: summary.engineer,
+        },
+      });
+      ingested += 1;
+      Utilities.sleep(SLEEP_MS_BETWEEN_CALLS);
+    } catch (e) {
+      errors.push(signal.id + ": " + e.message);
+      Logger.log("x signal error (" + signal.id + "): " + e.message);
+    }
+  });
+
+  Logger.log("x ingested=" + ingested + " errors=" + errors.length);
+  if (errors.length) Logger.log(errors.join(" | "));
+}
+
+function createXSignalTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === "ingestReadyXSignals") {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger("ingestReadyXSignals")
+    .timeBased()
+    .everyDays(1)
+    .atHour(9)
+    .create();
+}
+
+function assertOfficialPageUrl_(url) {
+  var host = String(url || "")
+    .replace(/^https?:\/\//i, "")
+    .split("/")[0]
+    .split(":")[0]
+    .toLowerCase();
+  if (
+    !host ||
+    host === "x.com" ||
+    host === "twitter.com" ||
+    host.slice(-6) === ".x.com" ||
+    host.slice(-12) === ".twitter.com"
+  ) {
+    throw new Error("refusing to fetch X/Twitter URL");
+  }
+}
+
+function fetchOfficialPageText_(url) {
+  var response = UrlFetchApp.fetch(url, {
+    muteHttpExceptions: true,
+    followRedirects: true,
+    headers: { "User-Agent": "AI-Feed-Digest/1.0" },
+  });
+  if (response.getResponseCode() >= 300) return "";
+  return stripHtml_(response.getContentText()).slice(0, 8000);
 }
 
 /**

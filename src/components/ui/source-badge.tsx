@@ -15,6 +15,18 @@ export function sourceToneVars(source: string): CSSProperties {
   } as CSSProperties;
 }
 
+/** X の投稿がきっかけの記事・メモに付ける印 */
+export function XSignalBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      title="Xの投稿がきっかけ"
+      className={`ui-source-badge ui-x-badge${className ? ` ${className}` : ""}`}
+    >
+      X
+    </span>
+  );
+}
+
 export function SourceBadge({ source, className = "" }: Props) {
   const tone = styleForSource(source);
 

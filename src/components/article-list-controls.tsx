@@ -2,7 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SearchField } from "@/components/ui/search-field";
 import { buildListHref } from "@/lib/articleFilters";
-import type { CategorySlug, GenreSlug } from "@/lib/constants";
+import {
+  DEFAULT_LIST_WINDOW,
+  LIST_WINDOWS,
+  type CategorySlug,
+  type GenreSlug,
+  type ListWindow,
+} from "@/lib/constants";
 
 type CategoryOption = {
   slug: CategorySlug;
@@ -18,6 +24,7 @@ type Props = {
   q: string;
   category: CategorySlug | "";
   genre: GenreSlug | "";
+  window: ListWindow;
   categories: CategoryOption[];
   genres: GenreOption[];
   resultCount: number;
@@ -47,12 +54,22 @@ export function ArticleListControls({
   q,
   category,
   genre,
+  window,
   categories,
   genres,
   resultCount,
   totalCount,
 }: Props) {
   const hasFilter = Boolean(q || category || genre);
+  const windowLabel =
+    LIST_WINDOWS.find((item) => item.slug === window)?.label ?? "直近24時間";
+  const listHref = (extra: { category?: string; genre?: string; window?: ListWindow }) =>
+    buildListHref({
+      q,
+      category: extra.category,
+      genre: extra.genre,
+      window: extra.window ?? window,
+    });
 
   return (
     <section className="animate-rise mb-6 border-y border-[var(--hairline)] py-5">
@@ -61,6 +78,9 @@ export function ArticleListControls({
           <input type="hidden" name="category" value={category} />
         ) : null}
         {genre ? <input type="hidden" name="genre" value={genre} /> : null}
+        {window !== DEFAULT_LIST_WINDOW ? (
+          <input type="hidden" name="window" value={window} />
+        ) : null}
         <SearchField
           id="article-search"
           name="q"
@@ -77,15 +97,37 @@ export function ArticleListControls({
       </form>
 
       <div className="mt-5">
+        <p className="ui-section-label mb-2">期間</p>
+        <div className="flex flex-wrap gap-2">
+          {LIST_WINDOWS.map((item) => (
+            <FilterChip
+              key={item.slug}
+              href={listHref({
+                category: category || undefined,
+                genre: genre || undefined,
+                window: item.slug,
+              })}
+              active={window === item.slug}
+            >
+              {item.label}
+            </FilterChip>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5">
         <p className="ui-section-label mb-2">種別で絞り込み</p>
         <div className="flex flex-wrap gap-2">
-          <FilterChip href={buildListHref({ q })} active={!category && !genre}>
+          <FilterChip
+            href={listHref({ window })}
+            active={!category && !genre}
+          >
             すべて
           </FilterChip>
           {categories.map((item) => (
             <FilterChip
               key={item.slug}
-              href={buildListHref({ q, category: item.slug })}
+              href={listHref({ category: item.slug, window })}
               active={category === item.slug && !genre}
             >
               {item.label}
@@ -99,7 +141,7 @@ export function ArticleListControls({
           <p className="ui-section-label mb-2">ソースで絞り込み</p>
           <div className="flex flex-wrap gap-2">
             <FilterChip
-              href={buildListHref({ q, category: category || undefined })}
+              href={listHref({ category: category || undefined, window })}
               active={!genre}
             >
               すべて
@@ -107,10 +149,10 @@ export function ArticleListControls({
             {genres.map((item) => (
               <FilterChip
                 key={item.slug}
-                href={buildListHref({
-                  q,
+                href={listHref({
                   category: category || undefined,
                   genre: item.slug,
+                  window,
                 })}
                 active={genre === item.slug}
               >
@@ -122,9 +164,13 @@ export function ArticleListControls({
       ) : null}
 
       <p className="mt-4 min-w-0 break-words text-[12px] font-semibold text-[var(--body)]">
-        {hasFilter
-          ? `${totalCount}件中 ${resultCount}件を表示`
-          : `${resultCount}件の要約`}
+        {window === "all"
+          ? hasFilter
+            ? `${totalCount}件中 ${resultCount}件を表示`
+            : `${resultCount}件の要約`
+          : hasFilter
+            ? `${windowLabel}の ${totalCount}件中 ${resultCount}件を表示`
+            : `${windowLabel}の ${resultCount}件`}
         {q ? (
           <span className="break-all text-[var(--mute)]">
             {" "}

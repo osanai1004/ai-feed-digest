@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { assertIngestAuthorized } from "@/lib/auth";
 import { INGEST_MAX_LENGTHS } from "@/lib/constants";
+import { readErrorMessage, readErrorStatus } from "@/lib/http";
+import { isOfficialPrimaryUrl, isXPostUrl } from "@/lib/intake";
 import { isSafeExternalUrl } from "@/lib/safeUrl";
-import { upsertArticle } from "@/lib/store";
+import { markSignalIngested, upsertArticle } from "@/lib/store";
 import { isDualSummary, isLegacySummary } from "@/lib/summary";
 import type { IngestPayload } from "@/lib/types";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const SIGNAL_ID = /^s_[a-f0-9]{16}$/;
 
 function isBoundedString(value: unknown, maxLength: number): value is string {
   return (
@@ -14,6 +19,55 @@ function isBoundedString(value: unknown, maxLength: number): value is string {
     Boolean(value.trim()) &&
     value.length <= maxLength
   );
+}
+
+function isConclusionField(value: unknown): boolean {
+  return (
+    typeof value === "string" ||
+    (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
+}
+
+function readProvenance(
+  body: Record<string, unknown>,
+  articleUrl: string,
+): Pick<IngestPayload, "origin" | "xPostUrl" | "officialNote" | "signalId"> | null {
+  const origin = body.origin;
+  const hasXFields =
+    body.xPostUrl != null ||
+    body.signalId != null ||
+    (body.officialNote != null && body.officialNote !== "") ||
+    origin === "x";
+
+  if (!hasXFields) {
+    if (origin != null && origin !== "rss") return null;
+    return { origin: "rss" };
+  }
+
+  if (origin !== "x") return null;
+  if (!isOfficialPrimaryUrl(articleUrl)) return null;
+  if (!isBoundedString(body.xPostUrl, INGEST_MAX_LENGTHS.xPostUrl)) return null;
+  if (!isXPostUrl(body.xPostUrl.trim())) return null;
+
+  if (typeof body.signalId !== "string" || !SIGNAL_ID.test(body.signalId)) {
+    return null;
+  }
+  const signalId = body.signalId;
+
+  let officialNote: string | undefined;
+  if (body.officialNote != null && body.officialNote !== "") {
+    if (!isBoundedString(body.officialNote, INGEST_MAX_LENGTHS.officialNote)) {
+      return null;
+    }
+    officialNote = body.officialNote.trim();
+  }
+
+  return {
+    origin: "x",
+    xPostUrl: body.xPostUrl.trim(),
+    officialNote,
+    signalId,
+  };
 }
 
 function isValidPayload(body: unknown): body is IngestPayload {
@@ -26,23 +80,18 @@ function isValidPayload(body: unknown): body is IngestPayload {
   if (!isSafeExternalUrl(b.url.trim())) return false;
   if (!b.summary || typeof b.summary !== "object") return false;
 
-  if (isLegacySummary(b.summary)) return true;
-  if (!isDualSummary(b.summary)) return false;
+  const summaryOk = isLegacySummary(b.summary)
+    ? true
+    : isDualSummary(b.summary) &&
+      isConclusionField((b.summary.general as Record<string, unknown>).conclusion) &&
+      Array.isArray((b.summary.general as Record<string, unknown>).situations) &&
+      isConclusionField((b.summary.engineer as Record<string, unknown>).conclusion) &&
+      Array.isArray((b.summary.engineer as Record<string, unknown>).situations);
+  if (!summaryOk) return false;
 
-  const general = b.summary.general as Record<string, unknown>;
-  const engineer = b.summary.engineer as Record<string, unknown>;
-  if (!isConclusionField(general.conclusion)) return false;
-  if (!Array.isArray(general.situations)) return false;
-  if (!isConclusionField(engineer.conclusion)) return false;
-  if (!Array.isArray(engineer.situations)) return false;
+  const provenance = readProvenance(b, b.url.trim());
+  if (!provenance) return false;
   return true;
-}
-
-function isConclusionField(value: unknown): boolean {
-  return (
-    typeof value === "string" ||
-    (Array.isArray(value) && value.every((item) => typeof item === "string"))
-  );
 }
 
 export async function POST(request: Request) {
@@ -53,27 +102,24 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Invalid payload. Required: source, title, url, summary.general|summary.engineer (or legacy summary.conclusion + situations[])",
+            "Invalid payload. Required: source, title, url, summary.general|summary.engineer (or legacy summary.conclusion + situations[]). X articles also need origin=x, an official url, and xPostUrl.",
         },
         { status: 400 },
       );
     }
 
-    const article = await upsertArticle(body);
+    const provenance = readProvenance(body, body.url.trim());
+    const article = await upsertArticle({
+      ...body,
+      ...provenance,
+    });
+    if (provenance?.signalId) {
+      await markSignalIngested(provenance.signalId, article.id, article.url);
+    }
     return NextResponse.json({ ok: true, article }, { status: 201 });
   } catch (error) {
-    const status =
-      typeof error === "object" &&
-      error &&
-      "status" in error &&
-      typeof (error as { status: unknown }).status === "number"
-        ? (error as { status: number }).status
-        : 500;
-    // 想定内エラー（401 など status 付き）以外は内部情報を返さない
-    const message =
-      status < 500 && error instanceof Error
-        ? error.message
-        : "Internal server error";
+    const status = readErrorStatus(error);
+    const message = readErrorMessage(error, status);
     if (status >= 500) {
       console.error("ingest failed:", error);
     }

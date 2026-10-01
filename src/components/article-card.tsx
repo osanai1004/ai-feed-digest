@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Chip } from "@/components/ui/chip";
-import { SourceBadge, sourceToneVars } from "@/components/ui/source-badge";
+import { SourceBadge, sourceToneVars, XSignalBadge } from "@/components/ui/source-badge";
 import { formatDate } from "@/lib/formatDate";
 import { toSingleLine } from "@/lib/text";
 import type { Article } from "@/lib/types";
@@ -73,6 +73,14 @@ export function ArticleCard({
       <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2 pl-2.5">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <SourceBadge source={article.source} />
+          {article.origin === "x" && article.source.trim().toLowerCase() !== "x" ? (
+            <XSignalBadge />
+          ) : null}
+          {article.origin === "x" && article.officialNote ? (
+            <Chip tone="teal" title={article.officialNote}>
+              公式確認
+            </Chip>
+          ) : null}
           {watchedKeyword ? (
             <Chip
               tone="orange"

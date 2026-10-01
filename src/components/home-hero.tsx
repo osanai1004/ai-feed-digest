@@ -8,9 +8,10 @@ import { formatDate } from "@/lib/formatDate";
 
 type Props = {
   lastUpdatedAt: string | null;
+  memoCount: number;
 };
 
-export function HomeHero({ lastUpdatedAt }: Props) {
+export function HomeHero({ lastUpdatedAt, memoCount }: Props) {
   return (
     <header className="ui-hero animate-fade mb-10 pt-1 sm:mb-12">
       <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -30,6 +31,9 @@ export function HomeHero({ lastUpdatedAt }: Props) {
           <BrandBadge>更新要約</BrandBadge>
         </Link>
         <div className="flex max-w-full flex-wrap items-center justify-end gap-2 self-end sm:self-auto">
+          <PillLink href="/memos">
+            メモ{memoCount > 0 ? ` ${memoCount}` : ""}
+          </PillLink>
           <PillLink href="/library">保存した記事</PillLink>
           <ThemeToggle />
         </div>

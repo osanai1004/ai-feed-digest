@@ -13,6 +13,7 @@ import {
   paginateArticles,
   type ArticleListQuery,
 } from "@/lib/articleFilters";
+import { bundleSourceBursts, type ArticleListEntry } from "@/lib/sourceBurst";
 import {
   LIBRARY_FILTER_PAGE_SIZE,
   LIBRARY_STATUS_FILTERS,
@@ -110,11 +111,15 @@ export function ArticleListView({ articles, query }: Props) {
 
   // 「すべて」はURLのページ番号どおり（共有可能なリンクを維持）、
   // 端末内状態での絞り込み中は「もっと見る」方式で表示する
+  const bundled = useMemo(
+    () => bundleSourceBursts(status === "all" ? articles : statusFiltered),
+    [articles, status, statusFiltered],
+  );
   const pageResult =
-    status === "all" ? paginateArticles(articles, query.page) : null;
-  const visibleItems = pageResult
+    status === "all" ? paginateArticles(bundled, query.page) : null;
+  const visibleItems: ArticleListEntry[] = pageResult
     ? pageResult.items
-    : statusFiltered.slice(0, visibleCount);
+    : bundled.slice(0, visibleCount);
 
   function changeStatus(next: LibraryStatusFilterSlug) {
     setStatus(next);
@@ -211,7 +216,7 @@ export function ArticleListView({ articles, query }: Props) {
       <section className="grid gap-3 sm:gap-3.5">
         {visibleItems.length === 0 ? (
           status === "all" ? (
-            <EmptyArticles />
+            <EmptyArticles query={query} />
           ) : (
             <Card className="p-8 text-center">
               <p className="font-display text-[18px] font-bold">
@@ -230,18 +235,60 @@ export function ArticleListView({ articles, query }: Props) {
             </Card>
           )
         ) : (
-          visibleItems.map((article, index) => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              index={index}
-              saved={isSaved(data, article.id)}
-              read={isRead(data, article.id)}
-              watchedKeyword={watchedKeywordByArticle.get(article.id) ?? null}
-              onToggleSaved={() => handleToggleSaved(article)}
-              onToggleRead={() => handleToggleRead(article)}
-            />
-          ))
+          visibleItems.map((entry, index) => {
+            if (entry.kind === "article") {
+              return (
+                <ArticleCard
+                  key={entry.article.id}
+                  article={entry.article}
+                  index={index}
+                  saved={isSaved(data, entry.article.id)}
+                  read={isRead(data, entry.article.id)}
+                  watchedKeyword={
+                    watchedKeywordByArticle.get(entry.article.id) ?? null
+                  }
+                  onToggleSaved={() => handleToggleSaved(entry.article)}
+                  onToggleRead={() => handleToggleRead(entry.article)}
+                />
+              );
+            }
+
+            const [primary, ...rest] = entry.articles;
+            return (
+              <div key={primary.id} className="grid gap-3">
+                <ArticleCard
+                  article={primary}
+                  index={index}
+                  saved={isSaved(data, primary.id)}
+                  read={isRead(data, primary.id)}
+                  watchedKeyword={watchedKeywordByArticle.get(primary.id) ?? null}
+                  onToggleSaved={() => handleToggleSaved(primary)}
+                  onToggleRead={() => handleToggleRead(primary)}
+                />
+                <details className="rounded-[var(--radius-card)] border border-[var(--hairline)] bg-[var(--card-soft)] px-4 py-3">
+                  <summary className="cursor-pointer text-[13px] font-extrabold text-[var(--ink-soft)]">
+                    {entry.source} の近い更新 あと{rest.length}件
+                  </summary>
+                  <div className="mt-3 grid gap-3">
+                    {rest.map((article, restIndex) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        index={restIndex}
+                        saved={isSaved(data, article.id)}
+                        read={isRead(data, article.id)}
+                        watchedKeyword={
+                          watchedKeywordByArticle.get(article.id) ?? null
+                        }
+                        onToggleSaved={() => handleToggleSaved(article)}
+                        onToggleRead={() => handleToggleRead(article)}
+                      />
+                    ))}
+                  </div>
+                </details>
+              </div>
+            );
+          })
         )}
       </section>
 
@@ -250,11 +297,12 @@ export function ArticleListView({ articles, query }: Props) {
           q={query.q}
           category={query.category}
           genre={query.genre}
+          window={query.window}
           page={pageResult.page}
           totalPages={pageResult.totalPages}
           total={pageResult.total}
         />
-      ) : statusFiltered.length > visibleCount ? (
+      ) : bundled.length > visibleCount ? (
         <div className="mt-6 text-center">
           <button
             type="button"
@@ -263,7 +311,7 @@ export function ArticleListView({ articles, query }: Props) {
             }
             className="ui-action-btn"
           >
-            もっと見る（残り{statusFiltered.length - visibleCount}件）
+            もっと見る（残り{bundled.length - visibleCount}件）
           </button>
         </div>
       ) : null}
