@@ -14,7 +14,7 @@
  * 4. runOnce を手動実行して認可
  * 5. createDailyTrigger を実行
  * 6. プロジェクトのタイムゾーンを Asia/Tokyo にする
- * 7. createXSignalTrigger を実行（毎日 4, 9, 12, 15, 18, 21 時）
+ * 7. createXSignalTrigger を実行（毎日 9 時台と 22 時台）
  *
  * X の投稿はここでは取得しない。
  * 浅子が /api/intake に渡して承認した候補だけ、ingestReadyXSignals が要約する。
@@ -331,12 +331,16 @@ function ingestReadyXSignals() {
 }
 
 function createXSignalTrigger() {
-  // Apps Script の atHour はプロジェクトのタイムゾーンで動く。
-  // 通勤前（6時より前）に載せ、日中も鮮度を保つため、タイムゾーンは Asia/Tokyo にすること。
-  var hours = [4, 9, 12, 15, 18, 21];
+  // atHour は、プロジェクトのタイムゾーンで、指定した時台のどこかで毎日動く。
+  // 平日 JST 8:45 と 21:45 の投入の直後に合わせ、9時台と 22時台の1日2回だけにする。
+  // 土日は投入が無い。ready が0件なら一覧を見て終わるだけなので、曜日は絞らず毎日のまま。
+  // タイムゾーンは Asia/Tokyo にすること。
+  var hours = [9, 22];
+  var removed = 0;
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === "ingestReadyXSignals") {
       ScriptApp.deleteTrigger(t);
+      removed += 1;
     }
   });
   hours.forEach(function (hour) {
@@ -346,6 +350,12 @@ function createXSignalTrigger() {
       .atHour(hour)
       .create();
   });
+  Logger.log(
+    "ingestReadyXSignals triggers replaced. removed=" +
+      removed +
+      " createdHours=" +
+      hours.join(","),
+  );
 }
 
 /**
