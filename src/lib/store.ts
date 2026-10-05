@@ -10,6 +10,7 @@ import {
   canonicalHttpUrl,
   canResubmitSignal,
   coarseFilterText,
+  officialUrlForDecision,
 } from "./intake";
 import {
   applyXMetricRefresh,
@@ -452,6 +453,7 @@ export type IncomingSignalDraft = {
   body: string;
   author: string | null;
   publishedAt: string;
+  officialUrl: string | null;
   metrics: XMetricPatch;
 };
 
@@ -476,7 +478,7 @@ function buildSignal(
     publishedAt: draft.publishedAt,
     status: reason ? "filtered" : "pending_review",
     filterReason: reason,
-    officialUrl: null,
+    officialUrl: draft.officialUrl,
     factcheckNote: null,
     articleId: null,
     updatedBy: null,
@@ -710,17 +712,23 @@ async function writeSignal(signal: IntakeSignal): Promise<IntakeSignal> {
 export async function decideSignal(input: {
   id: string;
   action: IntakeAction;
-  officialUrl: string | null;
+  /** 省略時は保存済みの公式URLを承認に使う。null は公式URLを外す明示 */
+  officialUrl: string | null | undefined;
   note: string | null;
   actor: string | null;
 }): Promise<IntakeSignal> {
   const current = await getSignal(input.id);
   if (!current) throw httpError("Signal not found", 404);
 
+  const officialUrl = officialUrlForDecision(
+    input.action,
+    input.officialUrl,
+    current.officialUrl,
+  );
   const applied = applyIntakeAction({
     status: current.status,
     action: input.action,
-    officialUrl: input.officialUrl,
+    officialUrl,
     xPostUrl: current.xPostUrl,
   });
   if (!applied.ok) throw httpError(applied.error, 400);

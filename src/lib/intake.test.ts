@@ -7,6 +7,8 @@ import {
   coarseFilterText,
   isOfficialPrimaryUrl,
   isXPostUrl,
+  officialUrlForDecision,
+  readIncomingOfficialUrl,
   resolveXIngestSource,
 } from "./intake";
 import { summaryExplainsContent } from "./summary";
@@ -251,6 +253,40 @@ describe("X ingest fallback", () => {
       }),
       true,
     );
+  });
+});
+
+describe("official URL on intake", () => {
+  it("keeps a stored official URL when approval omits the field", () => {
+    assert.equal(
+      officialUrlForDecision("approve", undefined, "https://openai.com/news"),
+      "https://openai.com/news",
+    );
+    assert.equal(
+      officialUrlForDecision("approve", null, "https://openai.com/news"),
+      null,
+    );
+    assert.equal(
+      officialUrlForDecision(
+        "approve",
+        "https://www.anthropic.com/news/claude",
+        "https://openai.com/news",
+      ),
+      "https://www.anthropic.com/news/claude",
+    );
+    assert.equal(
+      officialUrlForDecision("reject", undefined, "https://openai.com/news"),
+      null,
+    );
+  });
+
+  it("accepts an official page and rejects X URLs", () => {
+    const page = readIncomingOfficialUrl("https://openai.com/news/");
+    assert.equal(page.ok, true);
+    if (page.ok) assert.equal(page.officialUrl, "https://openai.com/news");
+    assert.equal(readIncomingOfficialUrl(null).ok, true);
+    assert.equal(readIncomingOfficialUrl("https://x.com/openai/status/1").ok, false);
+    assert.equal(readIncomingOfficialUrl("javascript:alert(1)").ok, false);
   });
 });
 

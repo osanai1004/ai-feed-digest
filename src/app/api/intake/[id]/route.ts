@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { assertIngestAuthorized } from "@/lib/auth";
 import { INTAKE_MAX_LENGTHS } from "@/lib/constants";
 import { httpError, readErrorMessage, readErrorStatus } from "@/lib/http";
-import { isOfficialPrimaryUrl, optionalBoundedString } from "@/lib/intake";
+import { optionalBoundedString, readIncomingOfficialUrl } from "@/lib/intake";
 import { decideSignal } from "@/lib/store";
 import { INTAKE_ACTIONS, type IntakeAction } from "@/lib/types";
 
@@ -38,19 +38,18 @@ export async function POST(
       throw httpError("actor or note is too long", 400);
     }
 
-    let officialUrl: string | null = null;
-    if (record.officialUrl != null && record.officialUrl !== "") {
-      if (typeof record.officialUrl !== "string") {
-        throw httpError("officialUrl must be a URL string", 400);
-      }
-      const trimmed = record.officialUrl.trim();
-      if (trimmed.length > INTAKE_MAX_LENGTHS.url || !isOfficialPrimaryUrl(trimmed)) {
+    let officialUrl: string | null | undefined;
+    if (!Object.prototype.hasOwnProperty.call(record, "officialUrl")) {
+      officialUrl = undefined;
+    } else {
+      const parsed = readIncomingOfficialUrl(record.officialUrl);
+      if (!parsed.ok) {
         throw httpError(
           "officialUrl must be an http(s) page that is not an X or Twitter URL",
           400,
         );
       }
-      officialUrl = trimmed;
+      officialUrl = parsed.officialUrl;
     }
 
     const signal = await decideSignal({

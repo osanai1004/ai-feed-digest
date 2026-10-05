@@ -1,0 +1,62 @@
+name: X candidate pickup
+
+# GAS の createXSignalTrigger（JST 4 / 9 / 12 / 15 / 18 / 21 時）の 15 分前。
+# cron は UTC。45 2,5,8,11,18,23 = JST 11:45 / 14:45 / 17:45 / 20:45 / 03:45 / 08:45。
+# スケジュールは default branch に入ったあとだけ動く。
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "POST せず、候補 JSON だけ出す"
+        type: boolean
+        default: true
+      auto_approve:
+        description: "この実行だけ、新規の確認待ちを ready にする"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "45 2,5,8,11,18,23 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: x-pickup
+  cancel-in-progress: false
+
+jobs:
+  pickup:
+    # X は GitHub ホストの IP を 403 にすることがある。通るマシンなら変数 X_PICKUP_RUNNER に self-hosted ラベルを入れる。
+    runs-on: ${{ vars.X_PICKUP_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: workers/x-pickup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: workers/x-pickup/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - name: Prepare X session file
+        env:
+          X_STORAGE_STATE: ${{ secrets.X_STORAGE_STATE }}
+        run: |
+          if [ -n "$X_STORAGE_STATE" ]; then
+            printf '%s' "$X_STORAGE_STATE" > "$RUNNER_TEMP/x-storage-state.json"
+            echo "X_STORAGE_STATE_PATH=$RUNNER_TEMP/x-storage-state.json" >> "$GITHUB_ENV"
+          fi
+      - name: Collect candidates and post to /api/intake
+        env:
+          APP_BASE_URL: ${{ secrets.APP_BASE_URL || vars.APP_BASE_URL }}
+          BASE_URL: ${{ secrets.BASE_URL || vars.BASE_URL }}
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          X_AUTH_TOKEN: ${{ secrets.X_AUTH_TOKEN }}
+          X_CT0: ${{ secrets.X_CT0 }}
+          X_PICKUP_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && (inputs.dry_run && '1' || '0') || '0' }}
+          X_PICKUP_AUTO_APPROVE: ${{ github.event_name == 'workflow_dispatch' && (inputs.auto_approve && '1' || '0') || vars.X_PICKUP_AUTO_APPROVE }}
+        run: npm run pickup

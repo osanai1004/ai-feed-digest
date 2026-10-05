@@ -14,7 +14,7 @@ ChatGPT / Claude / Gemini などの更新を追いながら、「何が変わっ
 
 - 公式・準公式 RSS から新着を自動取り込み
 - ホーム最上段で **X（SNS） / 公式サイト / All** を切り替える。各チャネルは1ページ20件で、Xが公式RSSの下に埋もれない
-- X の投稿は API では取らない。人がバズ順で渡した候補を記事にする。公式URLがあればそれを出典にし、無ければ投稿URLを出典にする。要約はタイトルの転記ではなく、投稿本文（公式ページが取れたときはその本文も）から2ボイスで書く
+- X の投稿は API では取らない。ログイン済みのブラウザがバズ順で候補を `/api/intake` に渡す。公式URLがあればそれを出典にし、無ければ投稿URLを出典にする。確認待ちの承認は既定のまま。要約はタイトルの転記ではなく、投稿本文（公式ページが取れたときはその本文も）から2ボイスで書く
 - 一覧の初期表示は直近24時間。同じソースの近い更新はまとめて出す
 - Gemini による日本語要約（結論 / 用語ひとこと / 使える場面）
 - **非エンジニア向け / エンジニア向け** の2ボイス切替（事実は同じ・言い方だけ変える）
@@ -35,6 +35,7 @@ ChatGPT / Claude / Gemini などの更新を追いながら、「何が変わっ
 |---|---|
 | 画面・取り込み API | Next.js（Vercel） |
 | RSS 取得 → 要約 → 送信 | Google Apps Script + Gemini |
+| X 候補の収集 | Playwright（GitHub Actions）。GAS の要約時刻の15分前 |
 | 記事の保存（任意） | Neon（Postgres）。未設定時はローカル JSON / サンプル表示 |
 
 ## 要約フォーマット
@@ -109,6 +110,9 @@ npx vercel --prod --yes
 5. 既存記事を2ボイス化したいときは `backfillDualVoiceArticles`（必要なら複数回）
 6. 毎日自動なら `createDailyTrigger` を実行
 7. X の ready を取り込むなら、Apps Script のタイムゾーンを Asia/Tokyo にして `createXSignalTrigger` を実行（毎日 4 / 9 / 12 / 15 / 18 / 21 時）
+8. X の候補収集は [`workers/x-pickup/README.md`](./workers/x-pickup/README.md)。GitHub Actions が上記の15分前に投稿を拾い、`/api/intake` に渡す。X が GitHub の Ubuntu を HTTP 403 で止めるときは、その README の self-hosted runner か、X を開けるマシンの cron を使う。止まったときの確認もそこ
+
+テストは `npm test`（アプリの単体テストのあと、`workers/x-pickup` のテスト）。収集側は先に `npm ci --prefix workers/x-pickup` と `npx playwright install chromium`（`workers/x-pickup` で実行）が必要です。
 
 監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js / GitHub Changelog / Cloudflare / Supabase / AWS（Machine Learning）
 
@@ -163,7 +167,7 @@ X 由来の記事は、同じエンドポイントに次を足します。`url` 
 
 ### `POST /api/intake`
 
-浅子がブラウザで拾った X の候補を渡す入口です。X の API は使いません。`Authorization: Bearer <INGEST_SECRET>` が必要です。
+X の候補を渡す入口です。収集ワーカー（`workers/x-pickup`）がバズ順で送ります。人が同じ形で渡すこともできます。X の API は使いません。`Authorization: Bearer <INGEST_SECRET>` が必要です。
 
 ```json
 {
@@ -174,6 +178,7 @@ X 由来の記事は、同じエンドポイントに次を足します。`url` 
       "source": "Claude",
       "author": "@someone",
       "publishedAt": "2026-10-01T00:00:00.000Z",
+      "officialUrl": "https://openai.com/index/example",
       "impressions": 12000,
       "reposts": 80,
       "likes": 340
@@ -182,7 +187,7 @@ X 由来の記事は、同じエンドポイントに次を足します。`url` 
 }
 ```
 
-1件だけなら `items` なしで同じフィールドを直に渡せます。サーバーが粗い仕分けをします。`impressions`（表示回数）・`reposts`（リポスト数）・`likes`（いいね数）は任意です。X の `public_metrics` でも同じ数値を読めます。無い項目は 0 として保存しません。
+1件だけなら `items` なしで同じフィールドを直に渡せます。サーバーが粗い仕分けをします。`impressions`（表示回数）・`reposts`（リポスト数）・`likes`（いいね数）は任意です。X の `public_metrics` でも同じ数値を読めます。無い項目は 0 として保存しません。`officialUrl` も任意です。X 以外の http(s) ページだけ通り、保存されます。承認時に `officialUrl` を省略するとこの値を使います。空文字を明示すると、記事 URL は投稿 URL だけになります。
 
 | 結果 | 意味 |
 |---|---|
@@ -200,12 +205,13 @@ X 由来の記事は、同じエンドポイントに次を足します。`url` 
 
 | action | 誰 | 結果 |
 |---|---|---|
-| `approve` + `officialUrl` | 浅子 | `ready`。GAS が公式ページを読んで2ボイス要約する |
-| `approve`（投稿URLあり・公式URLなし） | 浅子 | `ready`。GAS が投稿本文から2ボイス要約し、記事URLは投稿URL |
+| `approve`（`officialUrl` を省略） | 浅子 | `ready`。候補に保存してある公式URLがあればそれを使う。無ければ投稿本文から要約し、記事URLは投稿URL |
+| `approve` + `officialUrl` | 浅子 | `ready`。渡した公式ページを GAS が読んで2ボイス要約する |
+| `approve` + `officialUrl: ""` | 浅子 | `ready`。保存してあった公式URLを外し、記事URLは投稿URL |
 | `approve`（`memo`。投稿URLあり、公式URLは任意） | 浅子 | `ready`。確認待ちと同じ条件。メモは自動では動かさない |
 | `flag_factcheck` | 浅子 | `needs_factcheck`。裏取りが曖昧なとき龍馬へ |
-| `resolve_factcheck` + `officialUrl` | 龍馬 | `ready` |
-| `resolve_factcheck`（投稿URLあり・公式URLなし） | 龍馬 | `ready`。要約の根拠は投稿本文 |
+| `resolve_factcheck`（`officialUrl` を省略） | 龍馬 | `ready`。保存済みの公式URLがあればそれを使う。無ければ要約の根拠は投稿本文 |
+| `resolve_factcheck` + `officialUrl: ""` | 龍馬 | `ready`。公式URLを外し、要約の根拠は投稿本文 |
 | `reject` | どちらでも | `rejected` |
 | `restore` | 浅子 | `filtered` を確認待ちに戻す |
 

@@ -252,3 +252,36 @@ export function titleFromPostText(text: string): string {
   if (line.length <= INTAKE_MAX_LENGTHS.title) return line;
   return `${line.slice(0, INTAKE_MAX_LENGTHS.title - 1)}…`;
 }
+
+/**
+ * 取り込み JSON の公式URL。
+ * 空なら null。X / Twitter の URL や長すぎる値は拒否する。
+ */
+export function readIncomingOfficialUrl(
+  value: unknown,
+): { ok: true; officialUrl: string | null } | { ok: false } {
+  if (value == null || value === "") return { ok: true, officialUrl: null };
+  if (typeof value !== "string") return { ok: false };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, officialUrl: null };
+  if (trimmed.length > INTAKE_MAX_LENGTHS.url) return { ok: false };
+  if (!isOfficialPrimaryUrl(trimmed)) return { ok: false };
+  return { ok: true, officialUrl: canonicalHttpUrl(trimmed) ?? trimmed };
+}
+
+/**
+ * 承認時に公式URLをどう残すか。
+ * リクエストが省略（undefined）なら、収集時に保存した URL を使う。
+ * 空文字や null を明示したときは公式URLなし（投稿URLだけ）にする。
+ */
+export function officialUrlForDecision(
+  action: IntakeAction,
+  requested: string | null | undefined,
+  stored: string | null,
+): string | null {
+  if (action !== "approve" && action !== "resolve_factcheck") {
+    return requested ?? null;
+  }
+  if (requested === undefined) return stored;
+  return requested;
+}

@@ -11,6 +11,7 @@ import {
   isBoundedIntakeString,
   isXPostUrl,
   optionalBoundedString,
+  readIncomingOfficialUrl,
   titleFromPostText,
   type CoarseFilterReason,
 } from "@/lib/intake";
@@ -93,6 +94,13 @@ function parseDraft(raw: unknown): IncomingSignalDraft {
   if (source === undefined || author === undefined || title === undefined) {
     throw httpError("source, author, or title is too long", 400);
   }
+  const official = readIncomingOfficialUrl(item.officialUrl);
+  if (!official.ok) {
+    throw httpError(
+      "officialUrl must be an http(s) page that is not an X or Twitter URL",
+      400,
+    );
+  }
 
   let publishedAt = new Date().toISOString();
   if (item.publishedAt != null && item.publishedAt !== "") {
@@ -113,6 +121,7 @@ function parseDraft(raw: unknown): IncomingSignalDraft {
     title: title ?? titleFromPostText(item.text),
     body: item.text.trim(),
     publishedAt,
+    officialUrl: official.officialUrl,
     metrics: readXMetricPatch(item),
   };
 }

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/*.test.ts"
+    "test": "tsx --test src/lib/*.test.ts && npm test --prefix workers/x-pickup",
+    "x:pickup": "npm run pickup --prefix workers/x-pickup",
+    "x:login": "npm run login --prefix workers/x-pickup"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

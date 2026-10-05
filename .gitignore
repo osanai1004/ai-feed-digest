@@ -37,6 +37,11 @@ yarn-error.log*
 # local article store (dev)
 /data
 
+# X login session from workers/x-pickup (cookies). Never commit.
+workers/x-pickup/node_modules/
+workers/x-pickup/secrets/
+x-storage-state.json
+
 # vercel
 .vercel
 

@@ -16,8 +16,8 @@
  * 6. プロジェクトのタイムゾーンを Asia/Tokyo にする
  * 7. createXSignalTrigger を実行（毎日 4, 9, 12, 15, 18, 21 時）
  *
- * X の投稿はここでは取得しない。
- * 浅子が /api/intake に渡して承認した候補だけ、ingestReadyXSignals が要約する。
+ * X の投稿はここでは取得しない。収集は workers/x-pickup（Playwright）が行い、
+ * /api/intake に渡す。浅子が承認した ready だけ、ingestReadyXSignals が要約する。
  * 公式URLがあればそのページを根拠にする。無い、または本文が空なら投稿本文で要約し、
  * 記事URLは公式URL、無ければ投稿URLにする。
  */
@@ -232,8 +232,9 @@ function createDailyTrigger() {
 }
 
 /**
- * 人が承認して ready になった X 候補を、新しいものから要約して取り込む。
- * 並びは /api/intake?status=ready の返却順（作成が新しい候補から）。浅子はバズしている投稿から渡す。
+ * 承認されて ready になった X 候補を、新しいものから要約して取り込む。
+ * 候補の収集は GAS では行わない。workers/x-pickup がバズ順で /api/intake に渡す。
+ * 並びは /api/intake?status=ready の返却順（作成が新しい候補から）。
  * 公式URLがあればそのページを根拠にする。無い、または本文が空なら投稿本文だけで要約する。
  * 記事URLは公式URL、無ければ投稿URL。X / Twitter のページ自体は取得しない。
  */
@@ -333,6 +334,7 @@ function ingestReadyXSignals() {
 function createXSignalTrigger() {
   // Apps Script の atHour はプロジェクトのタイムゾーンで動く。
   // 通勤前（6時より前）に載せ、日中も鮮度を保つため、タイムゾーンは Asia/Tokyo にすること。
+  // 候補の収集（workers/x-pickup）は、この時刻の15分前に GitHub Actions が走る。
   var hours = [4, 9, 12, 15, 18, 21];
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === "ingestReadyXSignals") {

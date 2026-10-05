@@ -103,8 +103,8 @@ export const INTAKE_ACTIONS = [
 export type IntakeAction = (typeof INTAKE_ACTIONS)[number];
 
 /**
- * ブラウザで拾った X 投稿。
- * API 取得はせず、浅子が本文と URL を渡す。
+ * X の投稿候補。
+ * 収集ワーカー、または人が、本文・投稿URL・あれば公式URLを /api/intake に渡す。
  */
 export type IntakeSignal = {
   id: string;

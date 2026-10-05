@@ -16,7 +16,7 @@
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
 6. プロジェクトの設定でタイムゾーンを **Asia/Tokyo** にする。`atHour` はこのタイムゾーンで動く
-7. X の ready を取り込むなら `createXSignalTrigger` を一度実行（毎日 **4 / 9 / 12 / 15 / 18 / 21 時**）。既存の `ingestReadyXSignals` トリガーは消してから作り直す
+7. X の ready を取り込むなら `createXSignalTrigger` を一度実行（毎日 **4 / 9 / 12 / 15 / 18 / 21 時**）。既存の `ingestReadyXSignals` トリガーは消してから作り直す。候補そのものは、この15分前に `workers/x-pickup` が `/api/intake` に入れる
 8. **既存記事を2ボイス化／詳細内容を埋め直す**ときは `backfillDualVoiceArticles` を実行  
    （`APP_BASE_URL` 必須。1回あたり既定12件。足りなければ再度実行で続きから進む）
 9. 英語タイトル / 結論の `\n` 文字化け直しだけなら `repairExistingArticles`
@@ -39,7 +39,7 @@
 | 関数 | 対象 | 用途 |
 |---|---|---|
 | `runOnce` | RSSの**新着だけ** | これから入る記事を2ボイス＋詳細内容付きで取り込む |
-| `ingestReadyXSignals` | 人が承認した **X候補（ready）だけ** | 公式ページがあればそれを、無ければ投稿本文を読んで2ボイス要約し、記事にする。Xのページは取りに行かない |
+| `ingestReadyXSignals` | 承認済みの **X候補（ready）だけ** | 公式ページがあればそれを、無ければ投稿本文を読んで2ボイス要約し、記事にする。Xのページは取りに行かない。候補の収集は `workers/x-pickup` |
 | `backfillDualVoiceArticles` | アプリ内の**既存記事** | 過去記事を2ボイス化し、詳細内容も生成し直す |
 
 任意プロパティ:
@@ -84,9 +84,15 @@
 
 未設定の間は通知だけスキップされ、取り込み自体は動きます。
 
-## X の候補（浅子の手渡し）
+## X の候補（自動収集と浅子の承認）
 
-X の API も、GAS からの X ページ取得もしません。浅子がブラウザで拾った投稿を、アプリの `/api/intake` に渡します。`APP_BASE_URL` と `INGEST_SECRET` を使います。
+X の API も、GAS からの X ページ取得もしません。GAS の `UrlFetch` ではログイン後の X を操作できないため、収集は [`workers/x-pickup`](../workers/x-pickup/README.md) です。GitHub Actions が、下の要約時刻の15分前にバズ順の候補を `/api/intake` へ送ります。人が同じ API で足すこともできます。
+
+セッション（`X_STORAGE_STATE` か `X_AUTH_TOKEN` + `X_CT0`）、`INGEST_SECRET`、`APP_BASE_URL` の置き場と、止まったときの確認、秘密情報の取り替えはワーカーの README にあります。値はリポジトリに置きません。
+
+既定では確認待ちのままです。浅子が承認して `ready` になったものだけ、このスクリプトが要約します。キーワードだけで記事にしたくないためです。無人で `ready` まで進めるときは、ワーカーの `X_PICKUP_AUTO_APPROVE=1` です。
+
+人が手で送るときの例:
 
 1. 候補を送る（粗い仕分けはサーバーが行う）
 
@@ -112,8 +118,9 @@ curl -X POST "$APP_BASE_URL/api/intake" \
 
 2. 確認待ちを見る: `GET /api/intake?status=pending_review`
 3. 浅子が判断する: `POST /api/intake/<id>`
-   - 公式URLがある: `{"action":"approve","actor":"asako","officialUrl":"https://openai.com/..."}` → `ready`
-   - 公式URLがない（投稿URLはある）: `{"action":"approve","actor":"asako"}` → `ready`。記事URLは投稿URL
+   - 収集時の公式URLを使う: `{"action":"approve","actor":"asako"}` → `ready`。`officialUrl` を省略すると、候補に保存してある公式URLを残す。保存が無ければ記事URLは投稿URL
+   - 別の公式URLを渡す: `{"action":"approve","actor":"asako","officialUrl":"https://openai.com/..."}` → `ready`
+   - 公式URLを外す: `{"action":"approve","actor":"asako","officialUrl":""}` → `ready`。記事URLは投稿URL
    - 以前のルールで `memo` に残った候補も、同じ `approve` で `ready` にできます。投稿URLがあれば公式URLは無くてよく、送ったものだけが動きます
    - 裏取りが曖昧: `{"action":"flag_factcheck","actor":"asako","note":"一次情報が見つからない"}`
 4. 龍馬が曖昧なものを返す: `POST /api/intake/<id>`  

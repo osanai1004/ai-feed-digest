@@ -1,0 +1,19 @@
+{
+  "name": "x-pickup",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pickup": "tsx src/run.ts",
+    "login": "tsx src/login.ts",
+    "test": "tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "playwright": "^1.55.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
