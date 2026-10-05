@@ -16,7 +16,7 @@
 4. エディタで `runOnce` を実行（初回は権限承認）
 5. 毎日自動なら `createDailyTrigger` を一度実行
 6. プロジェクトの設定でタイムゾーンを **Asia/Tokyo** にする。`atHour` はこのタイムゾーンで動く
-7. X の ready を取り込むなら `createXSignalTrigger` を一度実行（毎日 **4 / 9 / 12 / 15 / 18 / 21 時**）。既存の `ingestReadyXSignals` トリガーは消してから作り直す
+7. X の ready を取り込むなら `createXSignalTrigger` を一度実行（毎日 **9 時台と 22 時台**）。既存の `ingestReadyXSignals` トリガーは消してから作り直す。平日 JST 8:45 / 21:45 の投入の直後に合わせた時刻です。土日は投入が無く、`ready` が0件なら一覧を見て終わるだけなので、毎日のままです
 8. **既存記事を2ボイス化／詳細内容を埋め直す**ときは `backfillDualVoiceArticles` を実行  
    （`APP_BASE_URL` 必須。1回あたり既定12件。足りなければ再度実行で続きから進む）
 9. 英語タイトル / 結論の `\n` 文字化け直しだけなら `repairExistingArticles`
@@ -119,7 +119,7 @@ curl -X POST "$APP_BASE_URL/api/intake" \
 4. 龍馬が曖昧なものを返す: `POST /api/intake/<id>`  
    `{"action":"resolve_factcheck","actor":"ryoma","officialUrl":"https://..."}`  
    公式URLが無くても、投稿URLがあれば `ready` になります。
-5. `ingestReadyXSignals` を実行する。`ready` を2ボイス形式で `/api/ingest` に送ります。公式ページの本文が取れればそれを根拠にし、`officialNote` は「公式もこう言っている」です。公式URLが無い、または取得本文が空なら、投稿本文だけで要約し、`officialNote` は付けません。記事URLは `officialUrl || xPostUrl` です。タイトルだけの転記は送りません。毎日なら `createXSignalTrigger` を一度実行します。時刻は JST の **4, 9, 12, 15, 18, 21 時**（プロジェクトのタイムゾーンが Asia/Tokyo であること）。4時は通勤前の6時より前に載せるためです。
+5. `ingestReadyXSignals` を実行する。`ready` を2ボイス形式で `/api/ingest` に送ります。公式ページの本文が取れればそれを根拠にし、`officialNote` は「公式もこう言っている」です。公式URLが無い、または取得本文が空なら、投稿本文だけで要約し、`officialNote` は付けません。記事URLは `officialUrl || xPostUrl` です。タイトルだけの転記は送りません。毎日なら `createXSignalTrigger` を一度実行します。時刻は JST の **9 時台と 22 時台**（プロジェクトのタイムゾーンが Asia/Tokyo であること）。平日 8:45 と 21:45 の投入の直後です。`atHour` はその時台のどこかで動きます。土日に `ready` が無くても、関数は一覧が空なら何も送らず終わります。
 
 `Code.gs` を更新したら、Apps Script のエディタに貼り直して保存してください。貼り直すまで、デプロイ済みのスクリプトは古い規則のままです。
 

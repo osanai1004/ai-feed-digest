@@ -108,7 +108,7 @@ npx vercel --prod --yes
 4. `runOnce` を手動実行（初回は権限承認）… 新着のみ取り込み
 5. 既存記事を2ボイス化したいときは `backfillDualVoiceArticles`（必要なら複数回）
 6. 毎日自動なら `createDailyTrigger` を実行
-7. X の ready を取り込むなら、Apps Script のタイムゾーンを Asia/Tokyo にして `createXSignalTrigger` を実行（毎日 4 / 9 / 12 / 15 / 18 / 21 時）
+7. X の ready を取り込むなら、Apps Script のタイムゾーンを Asia/Tokyo にして `createXSignalTrigger` を実行（毎日 9 時台と 22 時台。平日 8:45 / 21:45 の投入の直後）
 
 監視対象（初期設定）: OpenAI / Claude / Claude Code / Anthropic News / Google DeepMind / Google AI / Gemini / Cursor / Laravel / Vercel / Next.js / GitHub Changelog / Cloudflare / Supabase / AWS（Machine Learning）
 
