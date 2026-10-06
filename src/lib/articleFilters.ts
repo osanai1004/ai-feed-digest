@@ -6,6 +6,7 @@ import {
   DEFAULT_ARTICLE_CHANNEL,
   DEFAULT_LIST_WINDOW,
   DEFAULT_X_LIST_SORT,
+  LIST_WINDOWS,
   type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
@@ -65,6 +66,28 @@ export function parseArticleListQuery(searchParams: {
       : DEFAULT_X_LIST_SORT;
 
   return { q, channel, category, genre, page, window, sort };
+}
+
+/** 件数見出し用。初期チャネル（X）のときは期間名だけにする */
+export function listScopeLabel(
+  channel: ArticleChannel,
+  window: ListWindow,
+): string {
+  const windowLabel =
+    LIST_WINDOWS.find((item) => item.slug === window)?.label ?? "直近24時間";
+  const channelLabel =
+    ARTICLE_CHANNELS.find((item) => item.slug === channel)?.label ?? "All";
+  if (channel === DEFAULT_ARTICLE_CHANNEL) return windowLabel;
+  if (window === "all") return channelLabel;
+  return `${channelLabel}・${windowLabel}`;
+}
+
+/** 一覧結果の見出し。検索条件ではなく、今見ている範囲の発見サマリ */
+export function discoveryHeading(
+  channel: ArticleChannel,
+  window: ListWindow,
+): string {
+  return `${listScopeLabel(channel, window)}の発見`;
 }
 
 /** 入手元。未設定の origin は公式RSSとして扱う */

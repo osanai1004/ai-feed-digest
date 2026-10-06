@@ -21,12 +21,15 @@ export function FeedSkeleton() {
       <Bone className="mt-5 h-4 w-full max-w-lg rounded-full" />
       <Bone className="mt-2 h-4 w-3/5 max-w-sm rounded-full" />
 
-      <div className="mt-10 border-y border-[var(--hairline)] py-4">
-        <Bone className="h-12 rounded-2xl" />
-        <Bone className="mt-3 h-12 rounded-xl" />
-        <Bone className="mt-2 h-12 rounded-xl" />
-        <Bone className="mt-2 h-12 rounded-xl" />
+      <div className="mt-8 rounded-[var(--radius-card)] border border-[var(--hairline)] bg-[var(--card)] p-4 sm:p-5">
+        <Bone className="h-3 w-28 rounded-full" />
+        <Bone className="mt-3 h-11 rounded-xl" />
+        <Bone className="mt-3 h-11 w-44 rounded-full" />
+        <Bone className="mt-4 h-11 rounded-xl" />
       </div>
+
+      <Bone className="mt-6 h-7 w-52 rounded-lg" />
+      <Bone className="mt-2 h-4 w-14 rounded-full" />
 
       <div className="mt-5 grid gap-3">
         {Array.from({ length: CARD_COUNT }, (_, index) => (

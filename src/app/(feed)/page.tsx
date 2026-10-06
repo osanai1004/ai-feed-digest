@@ -1,5 +1,6 @@
 import { ArticleListControls } from "@/components/article-list-controls";
 import { ArticleListView } from "@/components/article-list-view";
+import { ArticleResultsHeader } from "@/components/article-results-header";
 import { HomeHero } from "@/components/home-hero";
 import {
   availableCategories,
@@ -58,10 +59,17 @@ export default async function HomePage({ searchParams }: Props) {
           sort={query.sort}
           categories={categories}
           genres={genres}
-          resultCount={filtered.length}
-          totalCount={inChannel.length}
         />
       </div>
+
+      <ArticleResultsHeader
+        channel={query.channel}
+        listWindow={query.window}
+        q={query.q}
+        filtered={Boolean(query.q || query.category || query.genre)}
+        resultCount={filtered.length}
+        totalCount={inChannel.length}
+      />
 
       <ArticleListView articles={listed} query={query} />
     </main>
