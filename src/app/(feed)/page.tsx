@@ -1,13 +1,13 @@
-import { ArticleListControls } from "@/components/article-list-controls";
 import { ArticleListView } from "@/components/article-list-view";
 import { HomeHero } from "@/components/home-hero";
 import {
+  articlesInBrowseScope,
   availableCategories,
   availableGenres,
   filterArticles,
-  filterByChannel,
-  filterByListWindow,
+  isSearchQuery,
   parseArticleListQuery,
+  showXChannelSort,
 } from "@/lib/articleFilters";
 import { listArticles, listMemos } from "@/lib/store";
 import { sortXChannelArticles } from "@/lib/xMetrics";
@@ -31,39 +31,34 @@ export default async function HomePage({ searchParams }: Props) {
   const articles = await listArticles();
   const memos = await listMemos();
   const query = parseArticleListQuery(await searchParams);
-  const inWindow = filterByListWindow(articles, query.window);
-  const inChannel = filterByChannel(inWindow, query.channel);
-  const categories = availableCategories(inChannel);
-  const genres = availableGenres(inChannel, query.category);
-  const filtered = filterArticles(inChannel, query);
-  const listed =
-    query.channel === "x"
-      ? sortXChannelArticles(filtered, query.sort)
-      : filtered;
+  const searching = isSearchQuery(query);
+  const scoped = articlesInBrowseScope(articles, query);
+  const facetBase = searching
+    ? filterArticles(scoped, { q: query.q, category: "", genre: "" })
+    : scoped;
+  const categories = availableCategories(facetBase);
+  const genres = availableGenres(facetBase, query.category);
+  const filtered = filterArticles(scoped, query);
+  const listed = showXChannelSort(query)
+    ? sortXChannelArticles(filtered, query.sort)
+    : filtered;
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">
-      <div className="home-mast">
-        <HomeHero
-          lastUpdatedAt={latestCreatedAt(articles)}
-          memoCount={memos.length}
-        />
-
-        <ArticleListControls
-          q={query.q}
-          channel={query.channel}
-          category={query.category}
-          genre={query.genre}
-          window={query.window}
-          sort={query.sort}
-          categories={categories}
-          genres={genres}
-          resultCount={filtered.length}
-          totalCount={inChannel.length}
-        />
-      </div>
-
-      <ArticleListView articles={listed} query={query} />
+      <ArticleListView
+        mast={
+          <HomeHero
+            lastUpdatedAt={latestCreatedAt(articles)}
+            memoCount={memos.length}
+          />
+        }
+        articles={listed}
+        query={query}
+        categories={categories}
+        genres={genres}
+        resultCount={filtered.length}
+        totalCount={facetBase.length}
+      />
     </main>
   );
 }

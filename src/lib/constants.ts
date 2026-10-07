@@ -105,7 +105,8 @@ export const ARTICLE_CHANNELS = [
 
 export type ArticleChannel = (typeof ARTICLE_CHANNELS)[number]["slug"];
 
-export const DEFAULT_ARTICLE_CHANNEL: ArticleChannel = "all";
+/** 未指定のホームは X。All と公式サイトは明示したときだけ */
+export const DEFAULT_ARTICLE_CHANNEL: ArticleChannel = "x";
 
 /**
  * Xチャネルだけの並び。

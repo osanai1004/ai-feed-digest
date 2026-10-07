@@ -4,6 +4,7 @@ type Props = {
   defaultValue?: string;
   placeholder?: string;
   label: string;
+  className?: string;
 };
 
 export function SearchField({
@@ -12,6 +13,7 @@ export function SearchField({
   defaultValue = "",
   placeholder,
   label,
+  className,
 }: Props) {
   return (
     <>
@@ -24,7 +26,7 @@ export function SearchField({
         type="search"
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="ui-search-field"
+        className={className ? `ui-search-field ${className}` : "ui-search-field"}
       />
     </>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChipScroller } from "@/components/chip-scroller";
 import {
   WATCH_KEYWORD_MAX_LENGTH,
   WATCH_KEYWORDS_MAX,
@@ -9,10 +10,12 @@ import { libraryActions } from "@/lib/libraryStore";
 
 type Props = {
   keywords: string[];
+  /** ホームの絞り込みカードに合わせた高さ */
+  compact?: boolean;
 };
 
 /** ウォッチキーワード（気になる語）の追加・削除フォーム */
-export function WatchKeywordEditor({ keywords }: Props) {
+export function WatchKeywordEditor({ keywords, compact = false }: Props) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +27,7 @@ export function WatchKeywordEditor({ keywords }: Props) {
 
   return (
     <div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className={compact ? "filter-inline-form" : "flex flex-col gap-2 sm:flex-row"}>
         <label className="sr-only" htmlFor="watch-keyword-input">
           ウォッチキーワードを追加
         </label>
@@ -44,12 +47,12 @@ export function WatchKeywordEditor({ keywords }: Props) {
             }
           }}
           placeholder="例: Laravel、Claude、MCP…"
-          className="ui-search-field"
+          className={compact ? "ui-search-field is-compact" : "ui-search-field"}
         />
         <button
           type="button"
           onClick={handleAdd}
-          className="ui-action-btn shrink-0 justify-center"
+          className={`ui-action-btn shrink-0 justify-center${compact ? " w-full sm:w-auto" : ""}`}
         >
           追加
         </button>
@@ -62,26 +65,23 @@ export function WatchKeywordEditor({ keywords }: Props) {
       ) : null}
 
       {keywords.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {keywords.map((keyword) => (
-            <li key={keyword} className="max-w-full">
-              <span
-                title={keyword}
-                className="ui-chip ui-chip-orange max-w-[min(100%,20rem)] gap-1.5 overflow-hidden"
-              >
-                <span className="min-w-0 truncate">{keyword}</span>
-                <button
-                  type="button"
-                  aria-label={`「${keyword}」をウォッチから外す`}
-                  onClick={() => libraryActions.removeWatchKeyword(keyword)}
-                  className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition hover:bg-[var(--card)]"
-                >
-                  ×
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
+        compact ? (
+          <ChipScroller as="ul" className="mt-3">
+            {keywords.map((keyword) => (
+              <li key={keyword}>
+                <KeywordChip keyword={keyword} singleLine />
+              </li>
+            ))}
+          </ChipScroller>
+        ) : (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {keywords.map((keyword) => (
+              <li key={keyword} className="max-w-full">
+                <KeywordChip keyword={keyword} />
+              </li>
+            ))}
+          </ul>
+        )
       ) : (
         <p className="mt-3 text-[12px] leading-5 text-[var(--mute)]">
           登録した語を含む記事に「ウォッチ」の印が付き、一覧で絞り込めます（最大
@@ -89,5 +89,30 @@ export function WatchKeywordEditor({ keywords }: Props) {
         </p>
       )}
     </div>
+  );
+}
+
+function KeywordChip({
+  keyword,
+  singleLine = false,
+}: {
+  keyword: string;
+  singleLine?: boolean;
+}) {
+  return (
+    <span
+      title={keyword}
+      className={`ui-chip ui-chip-orange gap-1.5${singleLine ? " whitespace-nowrap" : " max-w-[min(100%,20rem)] overflow-hidden"}`}
+    >
+      <span className={singleLine ? "" : "min-w-0 truncate"}>{keyword}</span>
+      <button
+        type="button"
+        aria-label={`「${keyword}」をウォッチから外す`}
+        onClick={() => libraryActions.removeWatchKeyword(keyword)}
+        className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition hover:bg-[var(--card)]"
+      >
+        ×
+      </button>
+    </span>
   );
 }

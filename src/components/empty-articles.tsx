@@ -1,29 +1,43 @@
 import { EmptyState } from "@/components/ui/empty-state";
 import { PillLink } from "@/components/ui/pill-link";
-import { buildListHref, type ArticleListQuery } from "@/lib/articleFilters";
 import {
-  ARTICLE_CHANNELS,
-  DEFAULT_ARTICLE_CHANNEL,
-  LIST_WINDOWS,
-} from "@/lib/constants";
+  buildListHref,
+  listScopeLabel,
+  type ArticleListQuery,
+} from "@/lib/articleFilters";
 
 type Props = {
   query: ArticleListQuery;
 };
 
 export function EmptyArticles({ query }: Props) {
+  const searching = query.q.trim().length > 0;
   const narrowedByContent = Boolean(query.q || query.category || query.genre);
   const narrowedByWindow = query.window !== "all";
-  const narrowedByChannel = query.channel !== DEFAULT_ARTICLE_CHANNEL;
-  const windowLabel =
-    LIST_WINDOWS.find((item) => item.slug === query.window)?.label ?? "この期間";
-  const channelLabel =
-    ARTICLE_CHANNELS.find((item) => item.slug === query.channel)?.label ?? "All";
-  const scopeLabel =
-    query.channel === DEFAULT_ARTICLE_CHANNEL
-      ? windowLabel
-      : `${channelLabel}・${windowLabel}`;
+  const narrowedByChannel = query.channel !== "all";
+  const scopeLabel = listScopeLabel(query.channel, query.window);
   const sort = query.channel === "x" ? query.sort : undefined;
+
+  if (searching) {
+    return (
+      <EmptyState
+        title="検索結果はありません"
+        body="タイトルや本文に、この語を含む記事が見つかりません。語を変えるか、種別・ソースを外してみてください。"
+      >
+        <PillLink
+          href={buildListHref({
+            window: query.window,
+            channel: query.channel,
+            category: query.category || undefined,
+            genre: query.genre || undefined,
+            sort,
+          })}
+        >
+          検索をやめる
+        </PillLink>
+      </EmptyState>
+    );
+  }
 
   if (!narrowedByContent && !narrowedByWindow && !narrowedByChannel) {
     return (
@@ -91,7 +105,7 @@ export function EmptyArticles({ query }: Props) {
         <PillLink
           href={buildListHref({
             window: query.window,
-            channel: DEFAULT_ARTICLE_CHANNEL,
+            channel: "all",
           })}
         >
           すべてのチャネルを見る

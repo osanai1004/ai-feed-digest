@@ -1,9 +1,8 @@
-"use client";
-
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { ChipScroller } from "@/components/chip-scroller";
 import { SearchField } from "@/components/ui/search-field";
-import { buildListHref } from "@/lib/articleFilters";
+import { buildListHref, showXChannelSort } from "@/lib/articleFilters";
 import {
   ARTICLE_CATEGORIES,
   ARTICLE_CHANNELS,
@@ -39,12 +38,9 @@ type Props = {
   sort: XListSort;
   categories: CategoryOption[];
   genres: GenreOption[];
-  resultCount: number;
-  totalCount: number;
+  /** 同じカードの末尾。端末内の表示フィルターを置く */
+  children?: ReactNode;
 };
-
-/** 同時に開けるフィルター区画は1つまで。初期はすべて閉じる */
-type FilterSectionId = "channel" | "period" | "type" | "source";
 
 function FilterChip({
   href,
@@ -61,6 +57,7 @@ function FilterChip({
     <Link
       href={href}
       title={title}
+      aria-current={active ? "true" : undefined}
       className={`ui-chip whitespace-nowrap transition${active ? " ui-chip-brand" : " ui-chip-soft"}`}
     >
       {children}
@@ -81,7 +78,7 @@ function ChevronIcon() {
     <svg
       viewBox="0 0 20 20"
       aria-hidden="true"
-      className="filter-accordion-chevron"
+      className="filter-disclosure-chevron"
     >
       <path
         d="M5 7.5 10 12.5 15 7.5"
@@ -95,54 +92,60 @@ function ChevronIcon() {
   );
 }
 
-function FilterSection({
-  id,
-  title,
-  summary,
-  open,
-  onToggle,
+function FilterBlock({
+  label,
+  labelId,
+  ruled = false,
   children,
 }: {
-  id: FilterSectionId;
-  title: string;
-  summary: string | null;
-  open: boolean;
-  onToggle: (id: FilterSectionId) => void;
+  label: string;
+  labelId: string;
+  /** このブロックの上に区切り線を引く */
+  ruled?: boolean;
   children: ReactNode;
 }) {
-  const triggerId = `filter-section-${id}-trigger`;
-  const panelId = `filter-section-${id}-panel`;
-
   return (
-    <div className="filter-accordion-section">
-      <button
-        type="button"
-        id={triggerId}
-        className="filter-accordion-trigger"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => onToggle(id)}
-      >
-        <span className="ui-section-label">{title}</span>
-        {summary ? (
-          <span className="filter-accordion-summary">{summary}</span>
+    <div className={`filter-panel-block${ruled ? " is-ruled" : ""}`}>
+      <p id={labelId} className="ui-section-label filter-panel-label">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+export function FilterDisclosure({
+  label,
+  hint,
+  value,
+  open,
+  ruled = false,
+  children,
+}: {
+  label: string;
+  hint?: string | null;
+  value?: string | null;
+  open?: boolean;
+  /** このブロックの上に区切り線を引く */
+  ruled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      className={`filter-panel-block filter-disclosure${ruled ? " is-ruled" : ""}`}
+      {...(open ? { open: true } : {})}
+    >
+      <summary>
+        <span className="ui-section-label">{label}</span>
+        {value ? (
+          <span className="filter-disclosure-value">{value}</span>
+        ) : hint ? (
+          <span className="filter-disclosure-hint">{hint}</span>
         ) : null}
         <ChevronIcon />
-      </button>
-      <div
-        id={panelId}
-        role="region"
-        aria-labelledby={triggerId}
-        className="filter-accordion-panel"
-        data-open={open ? "true" : "false"}
-        inert={!open}
-        aria-hidden={open ? undefined : true}
-      >
-        <div className="filter-accordion-panel-inner">
-          <div className="filter-accordion-panel-body">{children}</div>
-        </div>
-      </div>
-    </div>
+      </summary>
+      <div className="filter-disclosure-body">{children}</div>
+    </details>
   );
 }
 
@@ -155,29 +158,15 @@ export function ArticleListControls({
   sort,
   categories,
   genres,
-  resultCount,
-  totalCount,
+  children,
 }: Props) {
-  const [openSection, setOpenSection] = useState<FilterSectionId | null>(null);
-  const hasFilter = Boolean(q || category || genre);
-  const windowLabel =
-    LIST_WINDOWS.find((item) => item.slug === window)?.label ?? "直近24時間";
-  const channelLabel =
-    ARTICLE_CHANNELS.find((item) => item.slug === channel)?.label ?? "All";
-  const channelSummary =
-    channel === DEFAULT_ARTICLE_CHANNEL ? null : channelLabel;
-  const periodSummary = window === "all" ? null : windowLabel;
   const categorySummary =
     selectedLabel(category, categories) ??
     selectedLabel(category, ARTICLE_CATEGORIES);
   const genreSummary =
     selectedLabel(genre, genres) ?? selectedLabel(genre, ARTICLE_GENRES);
-  const scopeLabel =
-    channel === DEFAULT_ARTICLE_CHANNEL
-      ? windowLabel
-      : window === "all"
-        ? channelLabel
-        : `${channelLabel}・${windowLabel}`;
+  const refineSummary = [categorySummary, genreSummary].filter(Boolean).join(" / ");
+  const showSort = showXChannelSort({ q, channel });
   const listHref = (extra: {
     category?: string;
     genre?: string;
@@ -196,123 +185,100 @@ export function ArticleListControls({
     });
   };
 
-  function toggleSection(id: FilterSectionId) {
-    setOpenSection((current) => (current === id ? null : id));
-  }
-
   return (
-    <section className="animate-rise mb-6 border-y border-[var(--hairline)] py-5">
-      <form action="/" method="get" className="flex flex-col gap-3 sm:flex-row">
-        {channel !== DEFAULT_ARTICLE_CHANNEL ? (
-          <input type="hidden" name="channel" value={channel} />
-        ) : null}
-        {category ? (
-          <input type="hidden" name="category" value={category} />
-        ) : null}
-        {genre ? <input type="hidden" name="genre" value={genre} /> : null}
-        {window !== DEFAULT_LIST_WINDOW ? (
-          <input type="hidden" name="window" value={window} />
-        ) : null}
-        {channel === "x" && sort !== "latest" ? (
-          <input type="hidden" name="sort" value={sort} />
-        ) : null}
-        <SearchField
-          id="article-search"
-          name="q"
-          defaultValue={q}
-          placeholder="タイトル・本文から検索…"
-          label="記事を検索"
-        />
-        <button
-          type="submit"
-          className="min-h-11 shrink-0 rounded-2xl bg-[var(--accent)] px-5 py-3 text-[13px] font-extrabold text-white shadow-sm transition hover:brightness-105 motion-reduce:transition-none"
-        >
-          検索
-        </button>
-      </form>
+    <section className="filter-panel animate-rise" aria-labelledby="filter-panel-title">
+      <h2 id="filter-panel-title" className="ui-section-label">
+        表示条件
+      </h2>
 
-      <div className="filter-accordion">
-        <FilterSection
-          id="channel"
-          title="チャネル"
-          summary={channelSummary}
-          open={openSection === "channel"}
-          onToggle={toggleSection}
+      <FilterBlock label="検索" labelId="filter-search-label">
+        <form action="/" method="get" className="filter-search" aria-labelledby="filter-search-label">
+          {channel !== DEFAULT_ARTICLE_CHANNEL ? (
+            <input type="hidden" name="channel" value={channel} />
+          ) : null}
+          {category ? (
+            <input type="hidden" name="category" value={category} />
+          ) : null}
+          {genre ? <input type="hidden" name="genre" value={genre} /> : null}
+          {window !== DEFAULT_LIST_WINDOW ? (
+            <input type="hidden" name="window" value={window} />
+          ) : null}
+          {channel === "x" && sort !== "latest" ? (
+            <input type="hidden" name="sort" value={sort} />
+          ) : null}
+          <SearchField
+            id="article-search"
+            name="q"
+            defaultValue={q}
+            placeholder="全記事のタイトル・本文から検索…"
+            label="記事を検索"
+            className="is-compact"
+          />
+          <button type="submit" className="filter-search-submit">
+            検索
+          </button>
+        </form>
+      </FilterBlock>
+
+      <FilterBlock label="チャネル" labelId="filter-channel-label" ruled>
+        <div
+          className="ui-segmented"
+          role="group"
+          aria-labelledby="filter-channel-label"
         >
-          <div className="flex flex-wrap gap-2" role="group" aria-label="チャネル">
-            {ARTICLE_CHANNELS.map((item) => (
-              <FilterChip
+          {ARTICLE_CHANNELS.map((item) => {
+            const active = channel === item.slug;
+            return (
+              <Link
                 key={item.slug}
                 href={listHref({
                   category: category || undefined,
                   genre: genre || undefined,
                   channel: item.slug,
                 })}
-                active={channel === item.slug}
+                aria-current={active ? "true" : undefined}
               >
                 {item.label}
-              </FilterChip>
-            ))}
-          </div>
-        </FilterSection>
+              </Link>
+            );
+          })}
+        </div>
+      </FilterBlock>
 
-        {channel === "x" ? (
-          <div className="filter-sort-row">
-            <p className="ui-section-label mb-2">並び</p>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Xの並び">
-              {X_LIST_SORTS.map((item) => (
-                <FilterChip
-                  key={item.slug}
-                  href={listHref({
-                    category: category || undefined,
-                    genre: genre || undefined,
-                    sort: item.slug,
-                  })}
-                  active={sort === item.slug}
-                >
-                  {item.label}
-                </FilterChip>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <FilterSection
-          id="period"
-          title="期間"
-          summary={periodSummary}
-          open={openSection === "period"}
-          onToggle={toggleSection}
+      <FilterBlock label="期間" labelId="filter-period-label">
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-labelledby="filter-period-label"
         >
-          <div className="flex flex-wrap gap-2" role="group" aria-label="期間">
-            {LIST_WINDOWS.map((item) => (
-              <FilterChip
-                key={item.slug}
-                href={listHref({
-                  category: category || undefined,
-                  genre: genre || undefined,
-                  window: item.slug,
-                })}
-                active={window === item.slug}
-              >
-                {item.label}
-              </FilterChip>
-            ))}
-          </div>
-        </FilterSection>
-
-        <FilterSection
-          id="type"
-          title="種別で絞り込み"
-          summary={categorySummary}
-          open={openSection === "type"}
-          onToggle={toggleSection}
-        >
-          <div className="flex flex-wrap gap-2" role="group" aria-label="種別で絞り込み">
+          {LIST_WINDOWS.map((item) => (
             <FilterChip
-              href={listHref({ window })}
-              active={!category && !genre}
+              key={item.slug}
+              href={listHref({
+                category: category || undefined,
+                genre: genre || undefined,
+                window: item.slug,
+              })}
+              active={window === item.slug}
             >
+              {item.label}
+            </FilterChip>
+          ))}
+        </div>
+      </FilterBlock>
+
+      <FilterDisclosure
+        label="種別・ソース"
+        hint={refineSummary ? null : "すべて"}
+        value={refineSummary || null}
+        open={Boolean(category || genre)}
+        ruled
+      >
+          <p id="filter-type-label" className="ui-section-label filter-panel-label">
+            種別で絞り込み
+          </p>
+          <ChipScroller labelledBy="filter-type-label">
+            <FilterChip href={listHref({ window })} active={!category && !genre}>
               すべて
             </FilterChip>
             {categories.map((item) => (
@@ -325,61 +291,62 @@ export function ArticleListControls({
                 {item.label}
               </FilterChip>
             ))}
-          </div>
-        </FilterSection>
+          </ChipScroller>
 
-        {genres.length > 0 ? (
-          <FilterSection
-            id="source"
-            title="ソースで絞り込み"
-            summary={genreSummary}
-            open={openSection === "source"}
-            onToggle={toggleSection}
-          >
-            <div
-              className="flex flex-wrap gap-2"
-              role="group"
-              aria-label="ソースで絞り込み"
-            >
-              <FilterChip
-                href={listHref({ category: category || undefined, window })}
-                active={!genre}
-              >
-                すべて
-              </FilterChip>
-              {genres.map((item) => (
+          {genres.length > 0 ? (
+            <div className="filter-subsection">
+              <p id="filter-source-label" className="ui-section-label filter-panel-label">
+                ソースで絞り込み
+              </p>
+              <ChipScroller labelledBy="filter-source-label">
                 <FilterChip
-                  key={item.slug}
-                  href={listHref({
-                    category: category || undefined,
-                    genre: item.slug,
-                    window,
-                  })}
-                  active={genre === item.slug}
+                  href={listHref({ category: category || undefined, window })}
+                  active={!genre}
                 >
-                  {item.label}
+                  すべて
                 </FilterChip>
-              ))}
+                {genres.map((item) => (
+                  <FilterChip
+                    key={item.slug}
+                    href={listHref({
+                      category: category || undefined,
+                      genre: item.slug,
+                      window,
+                    })}
+                    active={genre === item.slug}
+                  >
+                    {item.label}
+                  </FilterChip>
+                ))}
+              </ChipScroller>
             </div>
-          </FilterSection>
-        ) : null}
-      </div>
+          ) : null}
+      </FilterDisclosure>
 
-      <p className="mt-4 min-w-0 break-words text-[12px] font-semibold text-[var(--body)]">
-        {window === "all" && channel === DEFAULT_ARTICLE_CHANNEL
-          ? hasFilter
-            ? `${totalCount}件中 ${resultCount}件を表示`
-            : `${resultCount}件の要約`
-          : hasFilter
-            ? `${scopeLabel}の ${totalCount}件中 ${resultCount}件を表示`
-            : `${scopeLabel}の ${resultCount}件`}
-        {q ? (
-          <span className="break-all text-[var(--mute)]">
-            {" "}
-            / 「{q}」
-          </span>
-        ) : null}
-      </p>
+      {showSort ? (
+        <FilterBlock label="並び" labelId="filter-sort-label" ruled>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-labelledby="filter-sort-label"
+          >
+            {X_LIST_SORTS.map((item) => (
+              <FilterChip
+                key={item.slug}
+                href={listHref({
+                  category: category || undefined,
+                  genre: genre || undefined,
+                  sort: item.slug,
+                })}
+                active={sort === item.slug}
+              >
+                {item.label}
+              </FilterChip>
+            ))}
+          </div>
+        </FilterBlock>
+      ) : null}
+      {children}
     </section>
   );
 }

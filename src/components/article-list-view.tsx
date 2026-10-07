@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ArticleCard } from "@/components/article-card";
+import {
+  ArticleListControls,
+  FilterDisclosure,
+} from "@/components/article-list-controls";
+import { ArticleResultsHeader } from "@/components/article-results-header";
 import { ArticlePagination } from "@/components/article-pagination";
 import { EmptyArticles } from "@/components/empty-articles";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,12 +16,15 @@ import { WatchKeywordEditor } from "@/components/watch-keyword-editor";
 import {
   articleSearchText,
   paginateArticles,
+  showXChannelSort,
   type ArticleListQuery,
 } from "@/lib/articleFilters";
 import { bundleSourceBursts, type ArticleListEntry } from "@/lib/sourceBurst";
 import {
   LIBRARY_FILTER_PAGE_SIZE,
   LIBRARY_STATUS_FILTERS,
+  type CategorySlug,
+  type GenreSlug,
   type LibraryStatusFilterSlug,
 } from "@/lib/constants";
 import {
@@ -29,10 +37,27 @@ import { libraryActions, useLibrary } from "@/lib/libraryStore";
 import { summaryHash } from "@/lib/summaryHash";
 import type { Article } from "@/lib/types";
 
+type CategoryOption = {
+  slug: CategorySlug;
+  label: string;
+  hint?: string;
+};
+
+type GenreOption = {
+  slug: GenreSlug;
+  label: string;
+};
+
 type Props = {
+  /** ヒーローなど、絞り込みカードの前に置くもの */
+  mast: ReactNode;
   /** URLの検索・種別・ソース条件で絞り込み済みの記事（全ページ分） */
   articles: Article[];
   query: ArticleListQuery;
+  categories: CategoryOption[];
+  genres: GenreOption[];
+  resultCount: number;
+  totalCount: number;
 };
 
 function toRef(article: Article): LibraryArticleRef {
@@ -59,11 +84,19 @@ const EMPTY_STATUS_MESSAGES: Record<
   },
   watched: {
     title: "ウォッチに一致する記事はありません",
-    body: "下の「ウォッチキーワード」から気になる語を登録すると、一致した記事をここで絞り込めます。",
+    body: "上の「ウォッチキーワード」から気になる語を登録すると、一致した記事をここで絞り込めます。",
   },
 };
 
-export function ArticleListView({ articles, query }: Props) {
+export function ArticleListView({
+  mast,
+  articles,
+  query,
+  categories,
+  genres,
+  resultCount,
+  totalCount,
+}: Props) {
   const { ready, data } = useLibrary();
   const [status, setStatus] = useState<LibraryStatusFilterSlug>("all");
   const [visibleCount, setVisibleCount] = useState(LIBRARY_FILTER_PAGE_SIZE);
@@ -113,15 +146,16 @@ export function ArticleListView({ articles, query }: Props) {
   // 端末内状態での絞り込み中は「もっと見る」方式で表示する
   const bundled = useMemo(() => {
     const source = status === "all" ? articles : statusFiltered;
-    // 表示回数・いいね順は公開時刻の束ねを外し、数値の並びを崩さない
+    // 表示回数・いいね順は公開時刻の束ねを外し、数値の並びを崩さない。
+    // 検索中は新しい順に固定しているので、束ねを外さない。
     if (
-      query.channel === "x" &&
+      showXChannelSort(query) &&
       (query.sort === "impressions" || query.sort === "likes")
     ) {
       return source.map((article) => ({ kind: "article" as const, article }));
     }
     return bundleSourceBursts(source);
-  }, [articles, query.channel, query.sort, status, statusFiltered]);
+  }, [articles, query, status, statusFiltered]);
   const pageResult =
     status === "all" ? paginateArticles(bundled, query.page) : null;
   const visibleItems: ArticleListEntry[] = pageResult
@@ -151,74 +185,99 @@ export function ArticleListView({ articles, query }: Props) {
 
   const activeFilter = LIBRARY_STATUS_FILTERS.find((f) => f.slug === status);
 
+  const keywordCount = data.watchKeywords.length;
+
   return (
     <>
-      <section className="animate-rise mb-5 rounded-[var(--radius-card)] border border-[var(--hairline)] bg-[var(--card-soft)] p-4 backdrop-blur-sm sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="ui-section-label min-w-0 leading-snug">
-            表示で絞り込み（この端末の記録）
-          </p>
-          {ready ? (
-            <p className="text-[12px] font-bold text-[var(--chip-teal-fg)]">
-              未読 {statusCounts.unread}件
-            </p>
-          ) : null}
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="表示で絞り込み">
-          {LIBRARY_STATUS_FILTERS.map((filter) => {
-            const active = status === filter.slug;
-            return (
-              <button
-                key={filter.slug}
-                type="button"
-                aria-pressed={active}
-                onClick={() => changeStatus(filter.slug)}
-                className={`ui-chip cursor-pointer transition${active ? " ui-chip-brand" : " ui-chip-soft"}`}
-              >
-                {filter.label}
-                {ready && filter.slug !== "all"
-                  ? ` (${statusCounts[filter.slug]})`
-                  : ""}
-              </button>
-            );
-          })}
-        </div>
-
-        {status !== "all" && activeFilter ? (
-          <p className="mt-3 text-[12px] font-semibold text-[var(--body)]">
-            「{activeFilter.label}」{statusFiltered.length}件を表示中
-            <button
-              type="button"
-              onClick={() => changeStatus("all")}
-              className="ml-2 font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+      <div className="home-mast">
+        {mast}
+        <ArticleListControls
+          q={query.q}
+          channel={query.channel}
+          category={query.category}
+          genre={query.genre}
+          window={query.window}
+          sort={query.sort}
+          categories={categories}
+          genres={genres}
+        >
+          <div className="filter-panel-block is-ruled">
+            <div className="filter-panel-label-row">
+              <p id="filter-device-label" className="ui-section-label">
+                この端末の記録
+              </p>
+              {ready ? (
+                <p className="filter-panel-meta is-accent">
+                  未読 {statusCounts.unread}件
+                </p>
+              ) : null}
+            </div>
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-labelledby="filter-device-label"
             >
-              すべてに戻す
-            </button>
-          </p>
-        ) : null}
+              {LIBRARY_STATUS_FILTERS.map((filter) => {
+                const active = status === filter.slug;
+                return (
+                  <button
+                    key={filter.slug}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => changeStatus(filter.slug)}
+                    className={`ui-chip cursor-pointer transition${active ? " ui-chip-brand" : " ui-chip-soft"}`}
+                  >
+                    {filter.label}
+                    {ready && filter.slug !== "all"
+                      ? ` (${statusCounts[filter.slug]})`
+                      : ""}
+                  </button>
+                );
+              })}
+            </div>
 
-        <details className="mt-4 border-t border-[var(--hairline)] pt-3">
-          <summary className="cursor-pointer text-[12px] font-extrabold text-[var(--ink-soft)]">
-            ウォッチキーワード
-            {data.watchKeywords.length > 0
-              ? `（${data.watchKeywords.length}件）`
-              : ""}
-          </summary>
-          <div className="mt-3">
-            <WatchKeywordEditor keywords={data.watchKeywords} />
+            {status !== "all" && activeFilter ? (
+              <p className="filter-panel-status">
+                「{activeFilter.label}」{statusFiltered.length}件を表示中
+                <button
+                  type="button"
+                  onClick={() => changeStatus("all")}
+                  className="ml-2 font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+                >
+                  すべてに戻す
+                </button>
+              </p>
+            ) : null}
+
+            <p className="filter-panel-note">
+              保存・既読・ウォッチはこの端末のブラウザにのみ記録されます（ログイン同期なし）。
+              <Link
+                href="/library"
+                className="ml-1 font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+              >
+                保存データの管理 →
+              </Link>
+            </p>
           </div>
-        </details>
 
-        <p className="mt-3 border-t border-[var(--hairline)] pt-3 text-[11px] leading-5 text-[var(--mute)]">
-          保存・既読・ウォッチはこの端末のブラウザにのみ記録されます（ログイン同期なし）。
-          <Link
-            href="/library"
-            className="ml-1 font-bold text-[var(--accent)] underline-offset-4 hover:underline"
+          <FilterDisclosure
+            label="ウォッチキーワード"
+            hint={keywordCount > 0 ? null : "未登録"}
+            value={keywordCount > 0 ? `${keywordCount}件` : null}
           >
-            保存データの管理 →
-          </Link>
-        </p>
-      </section>
+            <WatchKeywordEditor keywords={data.watchKeywords} compact />
+          </FilterDisclosure>
+        </ArticleListControls>
+      </div>
+
+      <ArticleResultsHeader
+        channel={query.channel}
+        listWindow={query.window}
+        q={query.q}
+        refined={Boolean(query.category || query.genre)}
+        resultCount={resultCount}
+        totalCount={totalCount}
+      />
 
       <section className="grid gap-3 sm:gap-3.5">
         {visibleItems.length === 0 ? (
