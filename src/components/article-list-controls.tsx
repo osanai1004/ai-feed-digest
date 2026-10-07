@@ -186,7 +186,7 @@ export function ArticleListControls({
   return (
     <section className="filter-panel animate-rise" aria-labelledby="filter-panel-title">
       <h2 id="filter-panel-title" className="ui-section-label">
-        表示で絞り込み
+        表示条件
       </h2>
 
       <FilterBlock label="チャネル" labelId="filter-channel-label">
@@ -266,8 +266,8 @@ export function ArticleListControls({
       </FilterBlock>
 
       <FilterDisclosure
-        label="絞り込み"
-        hint={refineSummary ? null : "種別・ソース"}
+        label="種別・ソース"
+        hint={refineSummary ? null : "すべて"}
         value={refineSummary || null}
         open={Boolean(category || genre)}
       >
