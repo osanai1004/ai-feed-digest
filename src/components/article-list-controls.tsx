@@ -191,7 +191,36 @@ export function ArticleListControls({
         表示条件
       </h2>
 
-      <FilterBlock label="チャネル" labelId="filter-channel-label">
+      <FilterBlock label="検索" labelId="filter-search-label">
+        <form action="/" method="get" className="filter-search" aria-labelledby="filter-search-label">
+          {channel !== DEFAULT_ARTICLE_CHANNEL ? (
+            <input type="hidden" name="channel" value={channel} />
+          ) : null}
+          {category ? (
+            <input type="hidden" name="category" value={category} />
+          ) : null}
+          {genre ? <input type="hidden" name="genre" value={genre} /> : null}
+          {window !== DEFAULT_LIST_WINDOW ? (
+            <input type="hidden" name="window" value={window} />
+          ) : null}
+          {channel === "x" && sort !== "latest" ? (
+            <input type="hidden" name="sort" value={sort} />
+          ) : null}
+          <SearchField
+            id="article-search"
+            name="q"
+            defaultValue={q}
+            placeholder="全記事のタイトル・本文から検索…"
+            label="記事を検索"
+            className="is-compact"
+          />
+          <button type="submit" className="filter-search-submit">
+            検索
+          </button>
+        </form>
+      </FilterBlock>
+
+      <FilterBlock label="チャネル" labelId="filter-channel-label" ruled>
         <div
           className="ui-segmented"
           role="group"
@@ -238,40 +267,12 @@ export function ArticleListControls({
         </div>
       </FilterBlock>
 
-      <FilterBlock label="検索" labelId="filter-search-label" ruled>
-      <form action="/" method="get" className="filter-search" aria-labelledby="filter-search-label">
-        {channel !== DEFAULT_ARTICLE_CHANNEL ? (
-          <input type="hidden" name="channel" value={channel} />
-        ) : null}
-        {category ? (
-          <input type="hidden" name="category" value={category} />
-        ) : null}
-        {genre ? <input type="hidden" name="genre" value={genre} /> : null}
-        {window !== DEFAULT_LIST_WINDOW ? (
-          <input type="hidden" name="window" value={window} />
-        ) : null}
-        {channel === "x" && sort !== "latest" ? (
-          <input type="hidden" name="sort" value={sort} />
-        ) : null}
-        <SearchField
-          id="article-search"
-          name="q"
-          defaultValue={q}
-          placeholder="全記事のタイトル・本文から検索…"
-          label="記事を検索"
-          className="is-compact"
-        />
-        <button type="submit" className="filter-search-submit">
-          検索
-        </button>
-      </form>
-      </FilterBlock>
-
       <FilterDisclosure
         label="種別・ソース"
         hint={refineSummary ? null : "すべて"}
         value={refineSummary || null}
         open={Boolean(category || genre)}
+        ruled
       >
           <p id="filter-type-label" className="ui-section-label filter-panel-label">
             種別で絞り込み
