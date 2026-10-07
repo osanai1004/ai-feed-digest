@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChipScroller } from "@/components/chip-scroller";
 import {
   WATCH_KEYWORD_MAX_LENGTH,
   WATCH_KEYWORDS_MAX,
@@ -64,26 +65,23 @@ export function WatchKeywordEditor({ keywords, compact = false }: Props) {
       ) : null}
 
       {keywords.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-2">
-          {keywords.map((keyword) => (
-            <li key={keyword} className="max-w-full">
-              <span
-                title={keyword}
-                className="ui-chip ui-chip-orange max-w-[min(100%,20rem)] gap-1.5 overflow-hidden"
-              >
-                <span className="min-w-0 truncate">{keyword}</span>
-                <button
-                  type="button"
-                  aria-label={`「${keyword}」をウォッチから外す`}
-                  onClick={() => libraryActions.removeWatchKeyword(keyword)}
-                  className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition hover:bg-[var(--card)]"
-                >
-                  ×
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
+        compact ? (
+          <ChipScroller as="ul" className="mt-3">
+            {keywords.map((keyword) => (
+              <li key={keyword}>
+                <KeywordChip keyword={keyword} />
+              </li>
+            ))}
+          </ChipScroller>
+        ) : (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {keywords.map((keyword) => (
+              <li key={keyword} className="max-w-full">
+                <KeywordChip keyword={keyword} />
+              </li>
+            ))}
+          </ul>
+        )
       ) : (
         <p className="mt-3 text-[12px] leading-5 text-[var(--mute)]">
           登録した語を含む記事に「ウォッチ」の印が付き、一覧で絞り込めます（最大
@@ -91,5 +89,24 @@ export function WatchKeywordEditor({ keywords, compact = false }: Props) {
         </p>
       )}
     </div>
+  );
+}
+
+function KeywordChip({ keyword }: { keyword: string }) {
+  return (
+    <span
+      title={keyword}
+      className="ui-chip ui-chip-orange max-w-[min(100%,20rem)] gap-1.5 overflow-hidden"
+    >
+      <span className="min-w-0 truncate">{keyword}</span>
+      <button
+        type="button"
+        aria-label={`「${keyword}」をウォッチから外す`}
+        onClick={() => libraryActions.removeWatchKeyword(keyword)}
+        className="ml-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold transition hover:bg-[var(--card)]"
+      >
+        ×
+      </button>
+    </span>
   );
 }

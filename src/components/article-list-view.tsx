@@ -16,6 +16,7 @@ import { WatchKeywordEditor } from "@/components/watch-keyword-editor";
 import {
   articleSearchText,
   paginateArticles,
+  showXChannelSort,
   type ArticleListQuery,
 } from "@/lib/articleFilters";
 import { bundleSourceBursts, type ArticleListEntry } from "@/lib/sourceBurst";
@@ -145,15 +146,16 @@ export function ArticleListView({
   // 端末内状態での絞り込み中は「もっと見る」方式で表示する
   const bundled = useMemo(() => {
     const source = status === "all" ? articles : statusFiltered;
-    // 表示回数・いいね順は公開時刻の束ねを外し、数値の並びを崩さない
+    // 表示回数・いいね順は公開時刻の束ねを外し、数値の並びを崩さない。
+    // 検索中は新しい順に固定しているので、束ねを外さない。
     if (
-      query.channel === "x" &&
+      showXChannelSort(query) &&
       (query.sort === "impressions" || query.sort === "likes")
     ) {
       return source.map((article) => ({ kind: "article" as const, article }));
     }
     return bundleSourceBursts(source);
-  }, [articles, query.channel, query.sort, status, statusFiltered]);
+  }, [articles, query, status, statusFiltered]);
   const pageResult =
     status === "all" ? paginateArticles(bundled, query.page) : null;
   const visibleItems: ArticleListEntry[] = pageResult
@@ -272,7 +274,7 @@ export function ArticleListView({
         channel={query.channel}
         listWindow={query.window}
         q={query.q}
-        filtered={Boolean(query.q || query.category || query.genre)}
+        refined={Boolean(query.category || query.genre)}
         resultCount={resultCount}
         totalCount={totalCount}
       />

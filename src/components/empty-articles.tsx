@@ -11,11 +11,33 @@ type Props = {
 };
 
 export function EmptyArticles({ query }: Props) {
+  const searching = query.q.trim().length > 0;
   const narrowedByContent = Boolean(query.q || query.category || query.genre);
   const narrowedByWindow = query.window !== "all";
   const narrowedByChannel = query.channel !== "all";
   const scopeLabel = listScopeLabel(query.channel, query.window);
   const sort = query.channel === "x" ? query.sort : undefined;
+
+  if (searching) {
+    return (
+      <EmptyState
+        title="検索結果はありません"
+        body="タイトルや本文に、この語を含む記事が見つかりません。語を変えるか、種別・ソースを外してみてください。"
+      >
+        <PillLink
+          href={buildListHref({
+            window: query.window,
+            channel: query.channel,
+            category: query.category || undefined,
+            genre: query.genre || undefined,
+            sort,
+          })}
+        >
+          検索をやめる
+        </PillLink>
+      </EmptyState>
+    );
+  }
 
   if (!narrowedByContent && !narrowedByWindow && !narrowedByChannel) {
     return (

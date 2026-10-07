@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ChipScroller } from "@/components/chip-scroller";
 import { SearchField } from "@/components/ui/search-field";
-import { buildListHref } from "@/lib/articleFilters";
+import { buildListHref, showXChannelSort } from "@/lib/articleFilters";
 import {
   ARTICLE_CATEGORIES,
   ARTICLE_CHANNELS,
@@ -165,6 +166,7 @@ export function ArticleListControls({
   const genreSummary =
     selectedLabel(genre, genres) ?? selectedLabel(genre, ARTICLE_GENRES);
   const refineSummary = [categorySummary, genreSummary].filter(Boolean).join(" / ");
+  const showSort = showXChannelSort({ q, channel });
   const listHref = (extra: {
     category?: string;
     genre?: string;
@@ -255,7 +257,7 @@ export function ArticleListControls({
           id="article-search"
           name="q"
           defaultValue={q}
-          placeholder="タイトル・本文から検索…"
+          placeholder="全記事のタイトル・本文から検索…"
           label="記事を検索"
           className="is-compact"
         />
@@ -274,11 +276,7 @@ export function ArticleListControls({
           <p id="filter-type-label" className="ui-section-label filter-panel-label">
             種別で絞り込み
           </p>
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-labelledby="filter-type-label"
-          >
+          <ChipScroller labelledBy="filter-type-label">
             <FilterChip href={listHref({ window })} active={!category && !genre}>
               すべて
             </FilterChip>
@@ -292,18 +290,14 @@ export function ArticleListControls({
                 {item.label}
               </FilterChip>
             ))}
-          </div>
+          </ChipScroller>
 
           {genres.length > 0 ? (
             <div className="filter-subsection">
               <p id="filter-source-label" className="ui-section-label filter-panel-label">
                 ソースで絞り込み
               </p>
-              <div
-                className="flex flex-wrap gap-2"
-                role="group"
-                aria-labelledby="filter-source-label"
-              >
+              <ChipScroller labelledBy="filter-source-label">
                 <FilterChip
                   href={listHref({ category: category || undefined, window })}
                   active={!genre}
@@ -323,12 +317,12 @@ export function ArticleListControls({
                     {item.label}
                   </FilterChip>
                 ))}
-              </div>
+              </ChipScroller>
             </div>
           ) : null}
       </FilterDisclosure>
 
-      {channel === "x" ? (
+      {showSort ? (
         <FilterBlock label="並び" labelId="filter-sort-label" ruled>
           <div
             className="flex flex-wrap gap-2"

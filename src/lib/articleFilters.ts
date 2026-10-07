@@ -90,6 +90,46 @@ export function discoveryHeading(
   return `${listScopeLabel(channel, window)}の発見`;
 }
 
+/** 検索語がある。前後の空白は検索に使わない */
+export function isSearchQuery(query: Pick<ArticleListQuery, "q">): boolean {
+  return query.q.trim().length > 0;
+}
+
+/**
+ * 一覧の母集団。
+ * 検索語があるときはチャネルと期間を外し、全記事から探す。
+ * 検索語が空のときは、これまでどおりチャネルと期間で絞る。
+ */
+export function articlesInBrowseScope(
+  articles: Article[],
+  query: Pick<ArticleListQuery, "q" | "channel" | "window">,
+  now: Date = new Date(),
+): Article[] {
+  if (isSearchQuery(query)) return articles;
+  return filterByChannel(
+    filterByListWindow(articles, query.window, now),
+    query.channel,
+  );
+}
+
+/**
+ * Xの表示回数・いいね順を出してよいか。
+ * 検索中は公式サイトも混ざるので、新しい順に固定して並びの操作は隠す。
+ */
+export function showXChannelSort(
+  query: Pick<ArticleListQuery, "q" | "channel">,
+): boolean {
+  return query.channel === "x" && !isSearchQuery(query);
+}
+
+/** 検索中は発見見出しと取り違えない */
+export function resultsHeading(
+  query: Pick<ArticleListQuery, "q" | "channel" | "window">,
+): string {
+  if (isSearchQuery(query)) return "検索結果";
+  return discoveryHeading(query.channel, query.window);
+}
+
 /** 入手元。未設定の origin は公式RSSとして扱う */
 export function filterByChannel(
   articles: Article[],

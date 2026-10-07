@@ -3,11 +3,16 @@ import { describe, it } from "node:test";
 import {
   articleMatchesCategory,
   articleMatchesGenre,
+  articlesInBrowseScope,
   availableCategories,
   buildListHref,
   discoveryHeading,
+  filterArticles,
   filterByChannel,
+  isSearchQuery,
   parseArticleListQuery,
+  resultsHeading,
+  showXChannelSort,
 } from "./articleFilters";
 import { ARTICLE_CATEGORIES, ARTICLE_GENRES, type CategorySlug } from "./constants";
 import type { Article } from "./types";
@@ -216,6 +221,62 @@ describe("article categories", () => {
       "/?channel=official",
     );
     assert.equal(buildListHref({ channel: "x", sort: "latest" }), "/");
+  });
+
+  it("searches every article when q is set and keeps the channel window when q is empty", () => {
+    const now = new Date("2026-10-07T12:00:00.000Z");
+    const recentX = article("OpenAI", "today from x", "x");
+    recentX.publishedAt = "2026-10-07T00:00:00.000Z";
+    const oldLaravel = article("Laravel", "old framework release");
+    oldLaravel.publishedAt = "2026-07-01T00:00:00.000Z";
+    const items = [recentX, oldLaravel];
+
+    const browsing = parseArticleListQuery({});
+    assert.equal(isSearchQuery(browsing), false);
+    assert.equal(showXChannelSort(browsing), true);
+    assert.equal(resultsHeading(browsing), "直近24時間の発見");
+    assert.deepEqual(
+      articlesInBrowseScope(items, browsing, now).map((item) => item.id),
+      [recentX.id],
+    );
+
+    const searching = parseArticleListQuery({
+      q: " Laravel ",
+      channel: "x",
+      window: "24h",
+      sort: "likes",
+    });
+    assert.equal(searching.q, "Laravel");
+    assert.equal(isSearchQuery(searching), true);
+    assert.equal(showXChannelSort(searching), false);
+    assert.equal(resultsHeading(searching), "検索結果");
+    assert.equal(
+      resultsHeading({ q: "Laravel", channel: "official", window: "today" }),
+      "検索結果",
+    );
+    assert.deepEqual(
+      articlesInBrowseScope(items, searching, now).map((item) => item.id),
+      [recentX.id, oldLaravel.id],
+    );
+    assert.deepEqual(
+      filterArticles(articlesInBrowseScope(items, searching, now), searching).map(
+        (item) => item.id,
+      ),
+      [oldLaravel.id],
+    );
+    assert.deepEqual(
+      filterArticles(articlesInBrowseScope(items, searching, now), {
+        ...searching,
+        category: "ai-models",
+      }).map((item) => item.id),
+      [],
+    );
+    assert.equal(parseArticleListQuery({ q: "   " }).q, "");
+    assert.equal(isSearchQuery(parseArticleListQuery({ q: "   " })), false);
+    assert.equal(
+      showXChannelSort(parseArticleListQuery({ channel: "official" })),
+      false,
+    );
   });
 
   it("lists only categories that have a matching article", () => {
