@@ -69,7 +69,7 @@ export function WatchKeywordEditor({ keywords, compact = false }: Props) {
           <ChipScroller as="ul" className="mt-3">
             {keywords.map((keyword) => (
               <li key={keyword}>
-                <KeywordChip keyword={keyword} />
+                <KeywordChip keyword={keyword} singleLine />
               </li>
             ))}
           </ChipScroller>
@@ -92,13 +92,19 @@ export function WatchKeywordEditor({ keywords, compact = false }: Props) {
   );
 }
 
-function KeywordChip({ keyword }: { keyword: string }) {
+function KeywordChip({
+  keyword,
+  singleLine = false,
+}: {
+  keyword: string;
+  singleLine?: boolean;
+}) {
   return (
     <span
       title={keyword}
-      className="ui-chip ui-chip-orange max-w-[min(100%,20rem)] gap-1.5 overflow-hidden"
+      className={`ui-chip ui-chip-orange gap-1.5${singleLine ? " whitespace-nowrap" : " max-w-[min(100%,20rem)] overflow-hidden"}`}
     >
-      <span className="min-w-0 truncate">{keyword}</span>
+      <span className={singleLine ? "" : "min-w-0 truncate"}>{keyword}</span>
       <button
         type="button"
         aria-label={`「${keyword}」をウォッチから外す`}

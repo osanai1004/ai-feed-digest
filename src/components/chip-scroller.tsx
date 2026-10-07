@@ -75,9 +75,17 @@ export function ChipScroller({
     update();
     const observer = new ResizeObserver(update);
     observer.observe(viewport);
+    const details = viewport.closest("details");
+    const onToggle = () => {
+      requestAnimationFrame(update);
+    };
+    details?.addEventListener("toggle", onToggle);
     const fonts = document.fonts;
     void fonts?.ready.then(update);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      details?.removeEventListener("toggle", onToggle);
+    };
   }, [itemKey]);
 
   if (items.length === 0) return null;
@@ -129,29 +137,29 @@ export function ChipScroller({
           </RowTag>
         )}
       </div>
-      {as === "ul" ? (
-        <ul
-          ref={(node) => {
-            measureRef.current = node;
-          }}
-          className="chip-scroller-measure"
-          inert
-          aria-hidden="true"
-        >
-          {items}
-        </ul>
-      ) : (
-        <div
-          ref={(node) => {
-            measureRef.current = node;
-          }}
-          className="chip-scroller-measure"
-          inert
-          aria-hidden="true"
-        >
-          {items}
-        </div>
-      )}
+      <div className="chip-scroller-measure-host" aria-hidden="true">
+        {as === "ul" ? (
+          <ul
+            ref={(node) => {
+              measureRef.current = node;
+            }}
+            className="chip-scroller-measure"
+            inert
+          >
+            {items}
+          </ul>
+        ) : (
+          <div
+            ref={(node) => {
+              measureRef.current = node;
+            }}
+            className="chip-scroller-measure"
+            inert
+          >
+            {items}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
