@@ -626,6 +626,9 @@ button.ui-chip.ui-chip-brand:hover {
 
 .filter-panel-block {
   margin-top: 1rem;
+}
+
+.filter-panel-block.is-ruled {
   padding-top: 1rem;
   border-top: 1px solid var(--hairline);
 }

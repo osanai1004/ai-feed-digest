@@ -94,14 +94,17 @@ function ChevronIcon() {
 function FilterBlock({
   label,
   labelId,
+  ruled = false,
   children,
 }: {
   label: string;
   labelId: string;
+  /** このブロックの上に区切り線を引く */
+  ruled?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className="filter-panel-block">
+    <div className={`filter-panel-block${ruled ? " is-ruled" : ""}`}>
       <p id={labelId} className="ui-section-label filter-panel-label">
         {label}
       </p>
@@ -115,17 +118,20 @@ export function FilterDisclosure({
   hint,
   value,
   open,
+  ruled = false,
   children,
 }: {
   label: string;
   hint?: string | null;
   value?: string | null;
   open?: boolean;
+  /** このブロックの上に区切り線を引く */
+  ruled?: boolean;
   children: ReactNode;
 }) {
   return (
     <details
-      className="filter-panel-block filter-disclosure"
+      className={`filter-panel-block filter-disclosure${ruled ? " is-ruled" : ""}`}
       {...(open ? { open: true } : {})}
     >
       <summary>
@@ -230,29 +236,34 @@ export function ArticleListControls({
         </div>
       </FilterBlock>
 
-      {channel === "x" ? (
-        <FilterBlock label="並び" labelId="filter-sort-label">
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-labelledby="filter-sort-label"
-          >
-            {X_LIST_SORTS.map((item) => (
-              <FilterChip
-                key={item.slug}
-                href={listHref({
-                  category: category || undefined,
-                  genre: genre || undefined,
-                  sort: item.slug,
-                })}
-                active={sort === item.slug}
-              >
-                {item.label}
-              </FilterChip>
-            ))}
-          </div>
-        </FilterBlock>
-      ) : null}
+      <FilterBlock label="検索" labelId="filter-search-label" ruled>
+      <form action="/" method="get" className="filter-search" aria-labelledby="filter-search-label">
+        {channel !== DEFAULT_ARTICLE_CHANNEL ? (
+          <input type="hidden" name="channel" value={channel} />
+        ) : null}
+        {category ? (
+          <input type="hidden" name="category" value={category} />
+        ) : null}
+        {genre ? <input type="hidden" name="genre" value={genre} /> : null}
+        {window !== DEFAULT_LIST_WINDOW ? (
+          <input type="hidden" name="window" value={window} />
+        ) : null}
+        {channel === "x" && sort !== "latest" ? (
+          <input type="hidden" name="sort" value={sort} />
+        ) : null}
+        <SearchField
+          id="article-search"
+          name="q"
+          defaultValue={q}
+          placeholder="タイトル・本文から検索…"
+          label="記事を検索"
+          className="is-compact"
+        />
+        <button type="submit" className="filter-search-submit">
+          検索
+        </button>
+      </form>
+      </FilterBlock>
 
       <FilterDisclosure
         label="絞り込み"
@@ -317,34 +328,29 @@ export function ArticleListControls({
           ) : null}
       </FilterDisclosure>
 
-      <FilterBlock label="検索" labelId="filter-search-label">
-      <form action="/" method="get" className="filter-search" aria-labelledby="filter-search-label">
-        {channel !== DEFAULT_ARTICLE_CHANNEL ? (
-          <input type="hidden" name="channel" value={channel} />
-        ) : null}
-        {category ? (
-          <input type="hidden" name="category" value={category} />
-        ) : null}
-        {genre ? <input type="hidden" name="genre" value={genre} /> : null}
-        {window !== DEFAULT_LIST_WINDOW ? (
-          <input type="hidden" name="window" value={window} />
-        ) : null}
-        {channel === "x" && sort !== "latest" ? (
-          <input type="hidden" name="sort" value={sort} />
-        ) : null}
-        <SearchField
-          id="article-search"
-          name="q"
-          defaultValue={q}
-          placeholder="タイトル・本文から検索…"
-          label="記事を検索"
-          className="is-compact"
-        />
-        <button type="submit" className="filter-search-submit">
-          検索
-        </button>
-      </form>
-      </FilterBlock>
+      {channel === "x" ? (
+        <FilterBlock label="並び" labelId="filter-sort-label" ruled>
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-labelledby="filter-sort-label"
+          >
+            {X_LIST_SORTS.map((item) => (
+              <FilterChip
+                key={item.slug}
+                href={listHref({
+                  category: category || undefined,
+                  genre: genre || undefined,
+                  sort: item.slug,
+                })}
+                active={sort === item.slug}
+              >
+                {item.label}
+              </FilterChip>
+            ))}
+          </div>
+        </FilterBlock>
+      ) : null}
       {children}
     </section>
   );

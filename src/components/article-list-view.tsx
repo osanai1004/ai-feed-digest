@@ -199,7 +199,7 @@ export function ArticleListView({
           categories={categories}
           genres={genres}
         >
-          <div className="filter-panel-block">
+          <div className="filter-panel-block is-ruled">
             <div className="filter-panel-label-row">
               <p id="filter-device-label" className="ui-section-label">
                 この端末の記録
