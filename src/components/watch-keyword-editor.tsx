@@ -9,10 +9,12 @@ import { libraryActions } from "@/lib/libraryStore";
 
 type Props = {
   keywords: string[];
+  /** ホームの絞り込みカードに合わせた高さ */
+  compact?: boolean;
 };
 
 /** ウォッチキーワード（気になる語）の追加・削除フォーム */
-export function WatchKeywordEditor({ keywords }: Props) {
+export function WatchKeywordEditor({ keywords, compact = false }: Props) {
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export function WatchKeywordEditor({ keywords }: Props) {
 
   return (
     <div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className={compact ? "filter-inline-form" : "flex flex-col gap-2 sm:flex-row"}>
         <label className="sr-only" htmlFor="watch-keyword-input">
           ウォッチキーワードを追加
         </label>
@@ -44,12 +46,12 @@ export function WatchKeywordEditor({ keywords }: Props) {
             }
           }}
           placeholder="例: Laravel、Claude、MCP…"
-          className="ui-search-field"
+          className={compact ? "ui-search-field is-compact" : "ui-search-field"}
         />
         <button
           type="button"
           onClick={handleAdd}
-          className="ui-action-btn shrink-0 justify-center"
+          className={`ui-action-btn shrink-0 justify-center${compact ? " w-full sm:w-auto" : ""}`}
         >
           追加
         </button>

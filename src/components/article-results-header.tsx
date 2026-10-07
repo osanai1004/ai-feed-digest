@@ -24,11 +24,11 @@ export function ArticleResultsHeader({
     : `${resultCount}件`;
 
   return (
-    <header className="animate-rise mb-5">
-      <h2 className="font-display text-[22px] leading-tight font-black tracking-[-0.03em] text-[var(--ink)] sm:text-[26px]">
+    <header className="results-heading animate-rise">
+      <h2 className="font-display">
         {discoveryHeading(channel, listWindow)}
       </h2>
-      <p className="mt-1.5 min-w-0 break-words text-[13px] font-semibold text-[var(--body)]">
+      <p>
         {countLabel}
         {q ? (
           <span className="break-all text-[var(--mute)]"> / 「{q}」</span>

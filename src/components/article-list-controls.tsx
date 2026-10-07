@@ -37,6 +37,8 @@ type Props = {
   sort: XListSort;
   categories: CategoryOption[];
   genres: GenreOption[];
+  /** 同じカードの末尾。端末内の表示フィルターを置く */
+  children?: ReactNode;
 };
 
 function FilterChip({
@@ -89,6 +91,57 @@ function ChevronIcon() {
   );
 }
 
+function FilterBlock({
+  label,
+  labelId,
+  children,
+}: {
+  label: string;
+  labelId: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="filter-panel-block">
+      <p id={labelId} className="ui-section-label filter-panel-label">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+export function FilterDisclosure({
+  label,
+  hint,
+  value,
+  open,
+  children,
+}: {
+  label: string;
+  hint?: string | null;
+  value?: string | null;
+  open?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      className="filter-panel-block filter-disclosure"
+      {...(open ? { open: true } : {})}
+    >
+      <summary>
+        <span className="ui-section-label">{label}</span>
+        {value ? (
+          <span className="filter-disclosure-value">{value}</span>
+        ) : hint ? (
+          <span className="filter-disclosure-hint">{hint}</span>
+        ) : null}
+        <ChevronIcon />
+      </summary>
+      <div className="filter-disclosure-body">{children}</div>
+    </details>
+  );
+}
+
 export function ArticleListControls({
   q,
   channel,
@@ -98,6 +151,7 @@ export function ArticleListControls({
   sort,
   categories,
   genres,
+  children,
 }: Props) {
   const categorySummary =
     selectedLabel(category, categories) ??
@@ -124,15 +178,12 @@ export function ArticleListControls({
   };
 
   return (
-    <section className="filter-panel animate-rise mb-6" aria-labelledby="filter-panel-title">
+    <section className="filter-panel animate-rise" aria-labelledby="filter-panel-title">
       <h2 id="filter-panel-title" className="ui-section-label">
         表示で絞り込み
       </h2>
 
-      <div className="filter-panel-block">
-        <p id="filter-channel-label" className="ui-section-label mb-2">
-          チャネル
-        </p>
+      <FilterBlock label="チャネル" labelId="filter-channel-label">
         <div
           className="ui-segmented"
           role="group"
@@ -155,12 +206,9 @@ export function ArticleListControls({
             );
           })}
         </div>
-      </div>
+      </FilterBlock>
 
-      <div className="filter-panel-block">
-        <p id="filter-period-label" className="ui-section-label mb-2">
-          期間
-        </p>
+      <FilterBlock label="期間" labelId="filter-period-label">
         <div
           className="flex flex-wrap gap-2"
           role="group"
@@ -180,13 +228,10 @@ export function ArticleListControls({
             </FilterChip>
           ))}
         </div>
-      </div>
+      </FilterBlock>
 
       {channel === "x" ? (
-        <div className="filter-panel-block">
-          <p id="filter-sort-label" className="ui-section-label mb-2">
-            並び
-          </p>
+        <FilterBlock label="並び" labelId="filter-sort-label">
           <div
             className="flex flex-wrap gap-2"
             role="group"
@@ -206,26 +251,16 @@ export function ArticleListControls({
               </FilterChip>
             ))}
           </div>
-        </div>
+        </FilterBlock>
       ) : null}
 
-      <details
-        className="filter-disclosure"
-        {...(category || genre ? { open: true } : {})}
+      <FilterDisclosure
+        label="絞り込み"
+        hint={refineSummary ? null : "種別・ソース"}
+        value={refineSummary || null}
+        open={Boolean(category || genre)}
       >
-        <summary>
-          <span className="ui-section-label">絞り込み</span>
-          <span
-            className={
-              refineSummary ? "filter-disclosure-value" : "filter-disclosure-hint"
-            }
-          >
-            {refineSummary || "種別・ソース"}
-          </span>
-          <ChevronIcon />
-        </summary>
-        <div className="filter-disclosure-body">
-          <p id="filter-type-label" className="ui-section-label mb-2">
+          <p id="filter-type-label" className="ui-section-label filter-panel-label">
             種別で絞り込み
           </p>
           <div
@@ -249,8 +284,8 @@ export function ArticleListControls({
           </div>
 
           {genres.length > 0 ? (
-            <>
-              <p id="filter-source-label" className="ui-section-label mt-4 mb-2">
+            <div className="filter-subsection">
+              <p id="filter-source-label" className="ui-section-label filter-panel-label">
                 ソースで絞り込み
               </p>
               <div
@@ -278,12 +313,12 @@ export function ArticleListControls({
                   </FilterChip>
                 ))}
               </div>
-            </>
+            </div>
           ) : null}
-        </div>
-      </details>
+      </FilterDisclosure>
 
-      <form action="/" method="get" className="filter-search">
+      <FilterBlock label="検索" labelId="filter-search-label">
+      <form action="/" method="get" className="filter-search" aria-labelledby="filter-search-label">
         {channel !== DEFAULT_ARTICLE_CHANNEL ? (
           <input type="hidden" name="channel" value={channel} />
         ) : null}
@@ -309,6 +344,8 @@ export function ArticleListControls({
           検索
         </button>
       </form>
+      </FilterBlock>
+      {children}
     </section>
   );
 }
