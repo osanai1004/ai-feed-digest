@@ -1058,3 +1058,124 @@ button.ui-chip.ui-chip-brand:hover {
   white-space: nowrap;
   border-width: 0;
 }
+
+.glossary-term {
+  position: relative;
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  vertical-align: baseline;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.glossary-term-label {
+  padding-bottom: 2px;
+  background-image: radial-gradient(circle at center, var(--accent-strong) 1.15px, transparent 1.35px);
+  background-size: 4.5px 3px;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+}
+
+.glossary-term::after {
+  content: "";
+  position: absolute;
+  inset: -0.35em -0.12em;
+}
+
+.glossary-term:hover .glossary-term-label,
+.glossary-term[aria-expanded="true"] .glossary-term-label {
+  background-color: var(--accent-soft);
+  background-image: linear-gradient(var(--accent-strong), var(--accent-strong));
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  border-radius: 0.15em;
+}
+
+.glossary-term:focus-visible,
+.glossary-dialog-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.glossary-dialog[open] {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+@media (min-width: 640px) {
+  .glossary-dialog[open] {
+    align-items: center;
+    padding: 1.5rem;
+  }
+}
+
+.glossary-dialog::backdrop {
+  background: rgba(16, 21, 28, 0.48);
+}
+
+.dark .glossary-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.66);
+}
+
+.glossary-dialog-card {
+  width: min(100%, 28rem);
+  max-height: min(70vh, 32rem);
+  overflow: auto;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  box-shadow: var(--shadow-hover);
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .glossary-dialog-card {
+    padding: 1.5rem;
+  }
+}
+
+.glossary-dialog-card h2:focus {
+  outline: none;
+}
+
+.glossary-dialog-close {
+  display: inline-flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin: -0.35rem -0.35rem 0 0;
+  border-radius: 9999px;
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.glossary-dialog-close:hover {
+  border-color: var(--accent);
+}
