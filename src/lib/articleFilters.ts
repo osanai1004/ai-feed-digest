@@ -4,12 +4,15 @@ import {
   ARTICLE_GENRES,
   ARTICLES_PER_PAGE,
   DEFAULT_ARTICLE_CHANNEL,
+  DEFAULT_LIST_ORDER,
   DEFAULT_LIST_WINDOW,
   DEFAULT_X_LIST_SORT,
+  LIST_ORDERS,
   LIST_WINDOWS,
   type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
+  type ListOrder,
   type ListWindow,
   type XListSort,
 } from "./constants";
@@ -24,6 +27,8 @@ export type ArticleListQuery = {
   genre: GenreSlug | "";
   page: number;
   window: ListWindow;
+  /** 期間側の並び順。並び替えが latest のときはこれだけで並べる */
+  order: ListOrder;
   /** Xチャネル以外は常に latest */
   sort: XListSort;
 };
@@ -60,12 +65,18 @@ export function parseArticleListQuery(searchParams: {
   const pageRaw = Number.parseInt(firstParam(searchParams.page) ?? "1", 10);
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
   const window = parseListWindow(firstParam(searchParams.window));
+  const order = parseListOrder(firstParam(searchParams.order));
   const sort =
     channel === "x"
       ? parseXListSort(firstParam(searchParams.sort))
       : DEFAULT_X_LIST_SORT;
 
-  return { q, channel, category, genre, page, window, sort };
+  return { q, channel, category, genre, page, window, order, sort };
+}
+
+export function parseListOrder(value: string | undefined): ListOrder {
+  const raw = (value ?? "").trim().toLowerCase();
+  return LIST_ORDERS.find((item) => item.slug === raw)?.slug ?? DEFAULT_LIST_ORDER;
 }
 
 /** 件数見出し用。初期チャネル（X）のときは期間名だけにする */
@@ -74,7 +85,7 @@ export function listScopeLabel(
   window: ListWindow,
 ): string {
   const windowLabel =
-    LIST_WINDOWS.find((item) => item.slug === window)?.label ?? "直近24時間";
+    LIST_WINDOWS.find((item) => item.slug === window)?.label ?? "直近3日";
   const channelLabel =
     ARTICLE_CHANNELS.find((item) => item.slug === channel)?.label ?? "All";
   if (channel === DEFAULT_ARTICLE_CHANNEL) return windowLabel;
@@ -113,7 +124,7 @@ export function articlesInBrowseScope(
 }
 
 /**
- * Xの表示回数・いいね順を出してよいか。
+ * Xのインプレッション・リポスト・いいね順を出してよいか。
  * 検索中は公式サイトも混ざるので、新しい順に固定して並びの操作は隠す。
  */
 export function showXChannelSort(
@@ -290,6 +301,7 @@ export function buildListHref(params: {
   genre?: string;
   page?: number;
   window?: ListWindow;
+  order?: ListOrder;
   sort?: XListSort;
 }): string {
   const sp = new URLSearchParams();
@@ -302,6 +314,9 @@ export function buildListHref(params: {
   if (params.genre) sp.set("genre", params.genre);
   if (params.window && params.window !== DEFAULT_LIST_WINDOW) {
     sp.set("window", params.window);
+  }
+  if (params.order && params.order !== DEFAULT_LIST_ORDER) {
+    sp.set("order", params.order);
   }
   if (
     params.channel === "x" &&

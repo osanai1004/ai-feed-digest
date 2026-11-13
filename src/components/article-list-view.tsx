@@ -35,6 +35,7 @@ import {
 } from "@/lib/library";
 import { libraryActions, useLibrary } from "@/lib/libraryStore";
 import { summaryHash } from "@/lib/summaryHash";
+import { isMetricSort } from "@/lib/xMetrics";
 import type { Article } from "@/lib/types";
 
 type CategoryOption = {
@@ -146,11 +147,10 @@ export function ArticleListView({
   // 端末内状態での絞り込み中は「もっと見る」方式で表示する
   const bundled = useMemo(() => {
     const source = status === "all" ? articles : statusFiltered;
-    // 表示回数・いいね順は公開時刻の束ねを外し、数値の並びを崩さない。
-    // 検索中は新しい順に固定しているので、束ねを外さない。
+    // 数値の並び替えと古い順は、新しい順を前提にした公開時刻の束ねを外し、並びを崩さない。
     if (
-      showXChannelSort(query) &&
-      (query.sort === "impressions" || query.sort === "likes")
+      (showXChannelSort(query) && isMetricSort(query.sort)) ||
+      query.order === "old"
     ) {
       return source.map((article) => ({ kind: "article" as const, article }));
     }
@@ -197,6 +197,7 @@ export function ArticleListView({
           category={query.category}
           genre={query.genre}
           window={query.window}
+          order={query.order}
           sort={query.sort}
           categories={categories}
           genres={genres}
@@ -362,6 +363,7 @@ export function ArticleListView({
           category={query.category}
           genre={query.genre}
           window={query.window}
+          order={query.order}
           sort={query.sort}
           page={pageResult.page}
           totalPages={pageResult.totalPages}

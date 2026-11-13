@@ -257,12 +257,12 @@ describe("X ingest fallback", () => {
 describe("list window", () => {
   const now = new Date("2026-10-01T01:00:00.000Z");
 
-  it("defaults to 24h and keeps today in Asia/Tokyo", () => {
-    assert.equal(parseArticleListQuery({}).window, "24h");
-    assert.equal(isInListWindow("2026-09-30T02:00:00.000Z", "24h", now), true);
-    assert.equal(isInListWindow("2026-09-29T00:00:00.000Z", "24h", now), false);
-    assert.equal(isInListWindow("2026-09-30T15:00:00.000Z", "today", now), true);
-    assert.equal(isInListWindow("2026-09-30T14:00:00.000Z", "today", now), false);
+  it("defaults to the recent 3 days (72 hours, future excluded)", () => {
+    assert.equal(parseArticleListQuery({}).window, "3d");
+    assert.equal(isInListWindow("2026-09-28T01:00:00.000Z", "3d", now), true);
+    assert.equal(isInListWindow("2026-09-28T00:59:59.000Z", "3d", now), false);
+    assert.equal(isInListWindow("2026-10-01T01:00:01.000Z", "3d", now), false);
+    assert.equal(isInListWindow("2020-01-01T00:00:00.000Z", "all", now), true);
   });
 });
 

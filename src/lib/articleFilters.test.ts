@@ -157,15 +157,22 @@ describe("article categories", () => {
     const x = article("OpenAI", "from x", "x");
     const rss = article("OpenAI", "from rss");
     assert.equal(parseArticleListQuery({}).channel, "x");
-    assert.equal(parseArticleListQuery({}).window, "24h");
+    assert.equal(parseArticleListQuery({}).window, "3d");
+    assert.equal(parseArticleListQuery({ window: "24h" }).window, "3d");
+    assert.equal(parseArticleListQuery({ window: "today" }).window, "3d");
+    assert.equal(parseArticleListQuery({ window: "all" }).window, "all");
+    assert.equal(parseArticleListQuery({}).order, "new");
+    assert.equal(parseArticleListQuery({ order: "old" }).order, "old");
+    assert.equal(parseArticleListQuery({ order: "zzz" }).order, "new");
+    assert.equal(parseArticleListQuery({ sort: "reposts" }).sort, "reposts");
     assert.equal(parseArticleListQuery({ channel: "x" }).channel, "x");
     assert.equal(parseArticleListQuery({ channel: "official" }).channel, "official");
     assert.equal(parseArticleListQuery({ channel: "sns" }).channel, "x");
     assert.equal(parseArticleListQuery({ sort: "likes" }).channel, "x");
     assert.equal(parseArticleListQuery({ sort: "likes" }).sort, "likes");
-    assert.equal(discoveryHeading("x", "24h"), "直近24時間の発見");
-    assert.equal(discoveryHeading("official", "24h"), "公式サイト・直近24時間の発見");
-    assert.equal(discoveryHeading("all", "today"), "All・今日の発見");
+    assert.equal(discoveryHeading("x", "3d"), "直近3日の発見");
+    assert.equal(discoveryHeading("official", "3d"), "公式サイト・直近3日の発見");
+    assert.equal(discoveryHeading("all", "all"), "Allの発見");
     assert.equal(discoveryHeading("x", "all"), "すべての発見");
 
     assert.deepEqual(
@@ -221,6 +228,11 @@ describe("article categories", () => {
       "/?channel=official",
     );
     assert.equal(buildListHref({ channel: "x", sort: "latest" }), "/");
+    assert.equal(buildListHref({ order: "new" }), "/");
+    assert.equal(
+      buildListHref({ channel: "x", window: "all", order: "old", sort: "reposts" }),
+      "/?window=all&order=old&sort=reposts",
+    );
   });
 
   it("searches every article when q is set and keeps the channel window when q is empty", () => {
@@ -234,7 +246,7 @@ describe("article categories", () => {
     const browsing = parseArticleListQuery({});
     assert.equal(isSearchQuery(browsing), false);
     assert.equal(showXChannelSort(browsing), true);
-    assert.equal(resultsHeading(browsing), "直近24時間の発見");
+    assert.equal(resultsHeading(browsing), "直近3日の発見");
     assert.deepEqual(
       articlesInBrowseScope(items, browsing, now).map((item) => item.id),
       [recentX.id],
@@ -243,7 +255,7 @@ describe("article categories", () => {
     const searching = parseArticleListQuery({
       q: " Laravel ",
       channel: "x",
-      window: "24h",
+      window: "3d",
       sort: "likes",
     });
     assert.equal(searching.q, "Laravel");
@@ -251,7 +263,7 @@ describe("article categories", () => {
     assert.equal(showXChannelSort(searching), false);
     assert.equal(resultsHeading(searching), "検索結果");
     assert.equal(
-      resultsHeading({ q: "Laravel", channel: "official", window: "today" }),
+      resultsHeading({ q: "Laravel", channel: "official", window: "3d" }),
       "検索結果",
     );
     assert.deepEqual(

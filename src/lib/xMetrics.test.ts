@@ -264,4 +264,30 @@ describe("X channel sort", () => {
       ["new-few", "new-zero", "tie-newer", "mid-missing", "old-many"],
     );
   });
+
+  it("uses the period order for ties, missing values and 指定なし", () => {
+    const items = [
+      { ...article("a-old-10", "2026-09-01T00:00:00.000Z", 5, 10), reposts: 3 },
+      { ...article("b-new-10", "2026-09-20T00:00:00.000Z", 5, 10), reposts: null },
+      { ...article("c-mid-null", "2026-09-10T00:00:00.000Z", null, null), reposts: 3 },
+      { ...article("d-new-null", "2026-09-30T00:00:00.000Z", 9, null), reposts: 7 },
+    ];
+
+    assert.deepEqual(
+      sortXChannelArticles(items, "likes", "old").map((item) => item.id),
+      ["a-old-10", "b-new-10", "c-mid-null", "d-new-null"],
+    );
+    assert.deepEqual(
+      sortXChannelArticles(items, "likes", "new").map((item) => item.id),
+      ["b-new-10", "a-old-10", "d-new-null", "c-mid-null"],
+    );
+    assert.deepEqual(
+      sortXChannelArticles(items, "reposts", "old").map((item) => item.id),
+      ["d-new-null", "a-old-10", "c-mid-null", "b-new-10"],
+    );
+    assert.deepEqual(
+      sortXChannelArticles(items, "latest", "old").map((item) => item.id),
+      ["a-old-10", "c-mid-null", "b-new-10", "d-new-null"],
+    );
+  });
 });

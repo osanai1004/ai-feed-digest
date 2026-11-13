@@ -8,12 +8,15 @@ import {
   ARTICLE_CHANNELS,
   ARTICLE_GENRES,
   DEFAULT_ARTICLE_CHANNEL,
+  DEFAULT_LIST_ORDER,
   DEFAULT_LIST_WINDOW,
+  LIST_ORDERS,
   LIST_WINDOWS,
   X_LIST_SORTS,
   type ArticleChannel,
   type CategorySlug,
   type GenreSlug,
+  type ListOrder,
   type ListWindow,
   type XListSort,
 } from "@/lib/constants";
@@ -35,6 +38,7 @@ type Props = {
   category: CategorySlug | "";
   genre: GenreSlug | "";
   window: ListWindow;
+  order: ListOrder;
   sort: XListSort;
   categories: CategoryOption[];
   genres: GenreOption[];
@@ -155,6 +159,7 @@ export function ArticleListControls({
   category,
   genre,
   window,
+  order,
   sort,
   categories,
   genres,
@@ -171,6 +176,7 @@ export function ArticleListControls({
     category?: string;
     genre?: string;
     window?: ListWindow;
+    order?: ListOrder;
     channel?: ArticleChannel;
     sort?: XListSort;
   }) => {
@@ -181,6 +187,7 @@ export function ArticleListControls({
       category: extra.category,
       genre: extra.genre,
       window: extra.window ?? window,
+      order: extra.order ?? order,
       sort: nextChannel === "x" ? (extra.sort ?? sort) : undefined,
     });
   };
@@ -202,6 +209,9 @@ export function ArticleListControls({
           {genre ? <input type="hidden" name="genre" value={genre} /> : null}
           {window !== DEFAULT_LIST_WINDOW ? (
             <input type="hidden" name="window" value={window} />
+          ) : null}
+          {order !== DEFAULT_LIST_ORDER ? (
+            <input type="hidden" name="order" value={order} />
           ) : null}
           {channel === "x" && sort !== "latest" ? (
             <input type="hidden" name="sort" value={sort} />
@@ -260,6 +270,25 @@ export function ArticleListControls({
                 window: item.slug,
               })}
               active={window === item.slug}
+            >
+              {item.label}
+            </FilterChip>
+          ))}
+        </div>
+        <div
+          className="mt-2 flex flex-wrap gap-2"
+          role="group"
+          aria-label="期間の並び順"
+        >
+          {LIST_ORDERS.map((item) => (
+            <FilterChip
+              key={item.slug}
+              href={listHref({
+                category: category || undefined,
+                genre: genre || undefined,
+                order: item.slug,
+              })}
+              active={order === item.slug}
             >
               {item.label}
             </FilterChip>
@@ -324,7 +353,7 @@ export function ArticleListControls({
       </FilterDisclosure>
 
       {showSort ? (
-        <FilterBlock label="並び" labelId="filter-sort-label" ruled>
+        <FilterBlock label="並び替え" labelId="filter-sort-label" ruled>
           <div
             className="flex flex-wrap gap-2"
             role="group"

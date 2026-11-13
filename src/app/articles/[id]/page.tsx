@@ -2,8 +2,7 @@ import { ArticleDetail } from "@/components/article-detail";
 import { RelatedArticles } from "@/components/related-articles";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { PillLink } from "@/components/ui/pill-link";
-import { findRelatedArticles } from "@/lib/relatedArticles";
-import { listArticles } from "@/lib/store";
+import { getArticle, getRelatedArticles } from "@/lib/store";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +13,11 @@ type Props = {
 
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params;
-  const articles = await listArticles();
-  const article = articles.find((a) => a.id === id);
+  // 本文は1件だけ読む。関連記事は軽い列で採点してから選ばれた数件だけ読む
+  const article = await getArticle(id);
   if (!article) notFound();
 
-  const related = findRelatedArticles(article, articles);
+  const related = await getRelatedArticles(article);
 
   return (
     <main className="mx-auto min-h-full w-full max-w-3xl px-4 pb-24 pt-5 sm:px-6 sm:pt-7">

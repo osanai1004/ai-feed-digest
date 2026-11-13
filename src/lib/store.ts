@@ -21,7 +21,26 @@ import {
   type XMetricCounts,
   type XMetricPatch,
 } from "./xMetrics";
+import {
+  articlesInBrowseScope,
+  filterArticles,
+  isSearchQuery,
+  showXChannelSort,
+  type ArticleListQuery,
+} from "./articleFilters";
+import {
+  buildArticleByIdQuery,
+  buildArticleStatsQuery,
+  buildArticlesByIdsQuery,
+  buildListQuery,
+  buildMemoCountQuery,
+  buildRelatedCandidatesQuery,
+  type BuiltQuery,
+} from "./articleQueries";
+import { DEFAULT_X_LIST_SORT } from "./constants";
+import { findRelatedArticles } from "./relatedArticles";
 import { SEED_ARTICLES } from "./seed";
+import { sortXChannelArticles } from "./xMetrics";
 import { normalizeArticleSummary } from "./summary";
 import type {
   Article,
@@ -46,7 +65,29 @@ function sqlClient() {
   return neon(url);
 }
 
-async function ensureSchema() {
+async function runQuery(query: BuiltQuery): Promise<Record<string, unknown>[]> {
+  const sql = sqlClient();
+  const rows = await sql.query(query.text, query.params);
+  return rows as Record<string, unknown>[];
+}
+
+/**
+ * スキーマ確認はインスタンスごとに1回だけ流す（毎リクエスト十数往復していた）。
+ * 失敗したときは次のリクエストでやり直す。
+ */
+let schemaReady: Promise<void> | null = null;
+
+function ensureSchema(): Promise<void> {
+  if (!schemaReady) {
+    schemaReady = applySchema().catch((error: unknown) => {
+      schemaReady = null;
+      throw error;
+    });
+  }
+  return schemaReady;
+}
+
+async function applySchema() {
   const sql = sqlClient();
   await sql`
     CREATE TABLE IF NOT EXISTS articles (
@@ -191,7 +232,7 @@ function isoFrom(value: unknown, fallback: string) {
   return date.toISOString();
 }
 
-function mapArticleRow(row: Record<string, unknown>): Article {
+export function mapArticleRow(row: Record<string, unknown>): Article {
   const summaryJson = row.summary_json;
   const summary =
     summaryJson && typeof summaryJson === "object"
@@ -304,23 +345,175 @@ export async function listArticles(): Promise<Article[]> {
   }
 
   await ensureSchema();
-  const sql = sqlClient();
-  const rows = await sql`
-    SELECT id, source, title, url, published_at, conclusion, situations,
-           summary_json, created_at, origin, x_post_url, official_note,
-           impressions, reposts, likes, metrics_updated_at
-    FROM articles
-    ORDER BY COALESCE(published_at, created_at) DESC
-  `;
+  // 全件が要るのは GET /api/articles（GAS の手動メンテ）だけ。画面は queryHomeArticles / getArticle を使う
+  const rows = await runQuery(
+    buildListQuery({
+      q: "",
+      channel: "all",
+      window: "all",
+      order: "new",
+      sort: DEFAULT_X_LIST_SORT,
+      now: new Date(),
+    }),
+  );
 
   if (rows.length === 0) return SEED_ARTICLES.map(presentArticle);
 
   return rows.map((row) => mapArticleRow(row as Record<string, unknown>));
 }
 
+export type HomeArticles = {
+  /** 画面に出す並び済みの記事（カテゴリ・ジャンル・検索の最終判定まで済み） */
+  listed: Article[];
+  /** 種別・ソースの選択肢を作る母集団 */
+  facetBase: Article[];
+  /** ヒーローの最終更新（全記事の created_at の最大） */
+  lastUpdatedAt: string | null;
+};
+
+function latestCreatedAt(articles: { createdAt: string }[]): string | null {
+  if (articles.length === 0) return null;
+  return articles.reduce(
+    (latest, article) =>
+      article.createdAt > latest ? article.createdAt : latest,
+    articles[0].createdAt,
+  );
+}
+
+/** これまでのメモリ上の絞り込み（DB が無いとき・DB が空でサンプルを出すとき） */
+function homeArticlesInMemory(
+  articles: Article[],
+  query: ArticleListQuery,
+  now: Date,
+): HomeArticles {
+  const scoped = articlesInBrowseScope(articles, query, now);
+  const facetBase = isSearchQuery(query)
+    ? filterArticles(scoped, { q: query.q, category: "", genre: "" })
+    : scoped;
+  const filtered = filterArticles(scoped, query);
+  const sort = showXChannelSort(query) ? query.sort : DEFAULT_X_LIST_SORT;
+  // 新しい順の X 以外は、これまでどおり読み込み順のまま（サンプルは配列の順）
+  const listed =
+    showXChannelSort(query) || query.order === "old"
+      ? sortXChannelArticles(filtered, sort, query.order)
+      : filtered;
+  return {
+    listed,
+    facetBase,
+    lastUpdatedAt: latestCreatedAt(articles),
+  };
+}
+
+/**
+ * ホーム一覧。期間・チャネル・並びは SQL で絞り、検索は SQL で粗く絞ってから
+ * これまでと同じ JS の判定で確定する（全記事を毎回読まない）。
+ */
+export async function queryHomeArticles(
+  query: ArticleListQuery,
+  now: Date = new Date(),
+): Promise<HomeArticles> {
+  if (!hasDatabaseUrl()) {
+    return homeArticlesInMemory(await listArticles(), query, now);
+  }
+
+  await ensureSchema();
+  const [stats] = await runQuery(buildArticleStatsQuery());
+  if (!stats || Number(stats.total) === 0) {
+    return homeArticlesInMemory(SEED_ARTICLES.map(presentArticle), query, now);
+  }
+
+  const rows = await runQuery(
+    buildListQuery({
+      q: query.q,
+      channel: query.channel,
+      window: query.window,
+      order: query.order,
+      sort: showXChannelSort(query) ? query.sort : DEFAULT_X_LIST_SORT,
+      now,
+    }),
+  );
+  const scoped = rows.map(mapArticleRow);
+  const facetBase = isSearchQuery(query)
+    ? filterArticles(scoped, { q: query.q, category: "", genre: "" })
+    : scoped;
+  return {
+    listed: filterArticles(scoped, query),
+    facetBase,
+    lastUpdatedAt: stats.last_created_at
+      ? isoFrom(stats.last_created_at, "") || null
+      : null,
+  };
+}
+
+async function hasNoArticles(): Promise<boolean> {
+  const [stats] = await runQuery(buildArticleStatsQuery());
+  return !stats || Number(stats.total) === 0;
+}
+
+/** 詳細ページ用に1件だけ読む */
 export async function getArticle(id: string): Promise<Article | null> {
-  const articles = await listArticles();
-  return articles.find((a) => a.id === id) ?? null;
+  if (!hasDatabaseUrl()) {
+    return readLocalArticles().find((a) => a.id === id) ?? null;
+  }
+  await ensureSchema();
+  const [row] = await runQuery(buildArticleByIdQuery(id));
+  if (row) return mapArticleRow(row);
+  if (await hasNoArticles()) {
+    return SEED_ARTICLES.map(presentArticle).find((a) => a.id === id) ?? null;
+  }
+  return null;
+}
+
+/**
+ * 関連記事。採点は軽い列（id・source・title・公開日時）だけで行い、
+ * 選ばれた数件だけ全列を読む。並びと選ばれ方は findRelatedArticles のまま。
+ */
+export async function getRelatedArticles(target: Article): Promise<Article[]> {
+  if (!hasDatabaseUrl()) {
+    return findRelatedArticles(target, await listArticles());
+  }
+  await ensureSchema();
+  const candidates = (await runQuery(buildRelatedCandidatesQuery())).map(
+    mapRelatedCandidateRow,
+  );
+  if (candidates.length === 0) {
+    return findRelatedArticles(target, SEED_ARTICLES.map(presentArticle));
+  }
+  const picked = findRelatedArticles(target, candidates);
+  if (picked.length === 0) return [];
+  const rows = await runQuery(
+    buildArticlesByIdsQuery(picked.map((article) => article.id)),
+  );
+  const byId = new Map(
+    rows.map((row) => {
+      const article = mapArticleRow(row);
+      return [article.id, article] as const;
+    }),
+  );
+  return picked
+    .map((article) => byId.get(article.id))
+    .filter((article): article is Article => Boolean(article));
+}
+
+/** 採点用の軽い行。要約は使わないので既定の空要約を入れる */
+function mapRelatedCandidateRow(row: Record<string, unknown>): Article {
+  return {
+    id: String(row.id),
+    source: String(row.source),
+    title: String(row.title).trim(),
+    url: "",
+    publishedAt: isoFrom(row.published_at ?? row.created_at, new Date().toISOString()),
+    summary: normalizeArticleSummary(null),
+    createdAt: isoFrom(row.created_at, new Date().toISOString()),
+  };
+}
+
+/** ホームのメモ件数。本文までは運ばない */
+export async function countMemos(): Promise<number> {
+  if (!hasDatabaseUrl()) return (await listMemos()).length;
+  await ensureSchema();
+  const [row] = await runQuery(buildMemoCountQuery());
+  return Number(row?.count ?? 0);
 }
 
 function mergeArticle(existing: Article | undefined, incoming: Article): Article {

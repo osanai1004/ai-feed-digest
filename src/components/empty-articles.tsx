@@ -27,6 +27,7 @@ export function EmptyArticles({ query }: Props) {
         <PillLink
           href={buildListHref({
             window: query.window,
+            order: query.order,
             channel: query.channel,
             category: query.category || undefined,
             genre: query.genre || undefined,
@@ -57,6 +58,7 @@ export function EmptyArticles({ query }: Props) {
         <PillLink
           href={buildListHref({
             window: "all",
+            order: query.order,
             channel: query.channel,
             sort,
           })}
@@ -80,6 +82,7 @@ export function EmptyArticles({ query }: Props) {
         <PillLink
           href={buildListHref({
             window: query.window,
+            order: query.order,
             channel: query.channel,
             sort,
           })}
@@ -95,6 +98,7 @@ export function EmptyArticles({ query }: Props) {
             category: query.category || undefined,
             genre: query.genre || undefined,
             window: "all",
+            order: query.order,
             sort,
           })}
         >
@@ -105,6 +109,7 @@ export function EmptyArticles({ query }: Props) {
         <PillLink
           href={buildListHref({
             window: query.window,
+            order: query.order,
             channel: "all",
           })}
         >

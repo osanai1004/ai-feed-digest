@@ -81,16 +81,31 @@ export const INTAKE_QUEUE_STATUSES = [
   "ready",
 ] as const;
 
-/** 一覧の初期表示期間。同じ日の RSS で X 記事が埋もれにくくする */
+/**
+ * 一覧の期間。同じ日の RSS で X 記事が埋もれにくくする。
+ * 「今日」と「直近24時間」は外した。古い ?window=today / ?window=24h は既定の直近3日として読む。
+ */
 export const LIST_WINDOWS = [
-  { slug: "24h", label: "直近24時間" },
-  { slug: "today", label: "今日" },
+  { slug: "3d", label: "直近3日" },
   { slug: "all", label: "すべて" },
 ] as const;
 
 export type ListWindow = (typeof LIST_WINDOWS)[number]["slug"];
 
-export const DEFAULT_LIST_WINDOW: ListWindow = "24h";
+export const DEFAULT_LIST_WINDOW: ListWindow = "3d";
+
+/**
+ * 期間側の並び順（公開日時）。
+ * 並び替えが「指定なし」のときはこれだけで並べ、数値の並び替えでは同じ値の中の順に使う。
+ */
+export const LIST_ORDERS = [
+  { slug: "new", label: "新しい順" },
+  { slug: "old", label: "古い順" },
+] as const;
+
+export type ListOrder = (typeof LIST_ORDERS)[number]["slug"];
+
+export const DEFAULT_LIST_ORDER: ListOrder = "new";
 
 /**
  * ホーム最上段の入手元。
@@ -109,13 +124,16 @@ export type ArticleChannel = (typeof ARTICLE_CHANNELS)[number]["slug"];
 export const DEFAULT_ARTICLE_CHANNEL: ArticleChannel = "x";
 
 /**
- * Xチャネルだけの並び。
- * All と公式サイトには出さない（期間との掛け合わせ表にはしない）。
+ * Xチャネルだけの並び替え。
+ * 数値を選ぶと、その数値の多い順を一番目にし、同じ値の中は期間側の新しい順・古い順で並べる。
+ * latest（指定なし）は期間側の並び順だけで並べる。slug は既存リンクのため latest のまま。
+ * All と公式サイトには数値が無いので出さない。
  */
 export const X_LIST_SORTS = [
-  { slug: "latest", label: "新しい順" },
-  { slug: "impressions", label: "表示回数" },
-  { slug: "likes", label: "いいね" },
+  { slug: "latest", label: "指定なし" },
+  { slug: "impressions", label: "インプレッション数" },
+  { slug: "reposts", label: "リポスト数" },
+  { slug: "likes", label: "いいね数" },
 ] as const;
 
 export type XListSort = (typeof X_LIST_SORTS)[number]["slug"];
@@ -134,11 +152,14 @@ export const X_METRICS_REFRESH_WINDOW_CAP = 30;
 /** 1回の取り込みで数値を書き換える既存記事の上限 */
 export const X_METRICS_REFRESH_MAX = 20;
 
-/** 表示回数・リポスト・いいねとして保存する上限 */
+/** インプレッション・リポスト・いいねとして保存する上限 */
 export const X_METRIC_MAX = 2_000_000_000;
 
-/** 直近24時間のミリ秒 */
+/** 24時間のミリ秒（数値更新の日数計算などに使う） */
 export const LIST_WINDOW_24H_MS = 24 * 60 * 60 * 1000;
+
+/** 一覧の「直近3日」の幅（ミリ秒）。SQL 側は interval '72 hours' */
+export const LIST_WINDOW_RECENT_MS = 3 * LIST_WINDOW_24H_MS;
 
 /** 同じソースがこの件数以上、近い時間に続くときは1つにまとめる */
 export const SOURCE_BURST_MIN = 3;
