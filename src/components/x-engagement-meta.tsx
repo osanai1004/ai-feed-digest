@@ -13,7 +13,7 @@ type PublishProps = {
 };
 
 const FIELDS = [
-  { key: "impressions", label: "表示", hero: true },
+  { key: "impressions", label: "インプレッション", hero: true },
   { key: "reposts", label: "リポスト", hero: false },
   { key: "likes", label: "いいね", hero: false },
 ] as const;
@@ -89,7 +89,7 @@ export function ArticlePublishMeta({ article, dateStyle }: PublishProps) {
   );
 }
 
-/** 数値が無い項目は出さない。0 は実数として出す。表示回数だけ大きく出す */
+/** 数値が無い項目は出さない。0 は実数として出す。インプレッションだけ大きく出す */
 export function XEngagementMeta({
   article,
   className = "pl-2.5",

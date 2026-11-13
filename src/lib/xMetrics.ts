@@ -1,4 +1,5 @@
 import {
+  DEFAULT_LIST_ORDER,
   DEFAULT_X_LIST_SORT,
   LIST_WINDOW_24H_MS,
   X_LIST_SORTS,
@@ -6,6 +7,7 @@ import {
   X_METRICS_REFRESH_DAYS,
   X_METRICS_REFRESH_MAX,
   X_METRICS_REFRESH_WINDOW_CAP,
+  type ListOrder,
   type XListSort,
 } from "./constants";
 import type { Article } from "./types";
@@ -197,36 +199,48 @@ export function parseXListSort(value: string | undefined): XListSort {
   return match?.slug ?? DEFAULT_X_LIST_SORT;
 }
 
-function byPublishedDesc(a: Article, b: Article): number {
-  return b.publishedAt.localeCompare(a.publishedAt);
+function byPublished(a: Article, b: Article, order: ListOrder): number {
+  const diff = b.publishedAt.localeCompare(a.publishedAt);
+  return order === "old" ? -diff : diff;
 }
 
-/** 数値が無い記事は 0 扱いにせず後ろへ。同数は公開が新しい順 */
+type MetricSortKey = "impressions" | "reposts" | "likes";
+
+/** 数値が無い記事は 0 扱いにせず後ろへ。同数は期間側の並び順（新しい順・古い順） */
 function byMetricDesc(
   a: Article,
   b: Article,
-  key: "impressions" | "likes",
+  key: MetricSortKey,
+  order: ListOrder,
 ): number {
   const left = typeof a[key] === "number" ? a[key] : null;
   const right = typeof b[key] === "number" ? b[key] : null;
-  if (left == null && right == null) return byPublishedDesc(a, b);
+  if (left == null && right == null) return byPublished(a, b, order);
   if (left == null) return 1;
   if (right == null) return -1;
   if (right !== left) return right - left;
-  return byPublishedDesc(a, b);
+  return byPublished(a, b, order);
 }
 
-/** Xチャネルの期間内だけ並び替える。表示回数・いいねが無い記事は 0 扱いにせず後ろへ */
+export function isMetricSort(sort: XListSort): sort is MetricSortKey {
+  return sort === "impressions" || sort === "reposts" || sort === "likes";
+}
+
+/**
+ * 一覧の並び（DB が無いときと検証用の基準）。
+ * DB があるときは articleQueries.ts の ORDER BY が同じ並びを作る。
+ */
 export function sortXChannelArticles(
   articles: Article[],
   sort: XListSort,
+  order: ListOrder = DEFAULT_LIST_ORDER,
 ): Article[] {
   const copy = [...articles];
-  if (sort === "impressions" || sort === "likes") {
-    copy.sort((a, b) => byMetricDesc(a, b, sort));
+  if (isMetricSort(sort)) {
+    copy.sort((a, b) => byMetricDesc(a, b, sort, order));
     return copy;
   }
-  copy.sort(byPublishedDesc);
+  copy.sort((a, b) => byPublished(a, b, order));
   return copy;
 }
 
